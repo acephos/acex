@@ -16,6 +16,12 @@
 ## Required gates (must all pass for production hygiene)
 
 ```bash
+scripts/verify-pr.sh --base-ref origin/master
+```
+
+Equivalent expanded local gates:
+
+```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
@@ -24,7 +30,7 @@ cargo run -p acex -- --checkpoint-status
 cargo run -p acex -- --smoke
 python scripts/check-ledger-append-only.py origin/master
 ```
-`--status` is included because it is the machine-readable live discovery/connection contract used by agents and docs. `--checkpoint-status` is the pure JSON continuation oracle; it must not spawn Herdr and must report tracker capsule state, ledger validity, git state, and discovery diagnostics. The ledger check validates JSONL shape, hash chain, tracker-ledger coupling, and append-only prefix preservation when a base ref exists.
+`scripts/verify-pr.sh` is the local/CI wrapper for these gates. Hosted GitHub runners use `scripts/verify-pr.sh --offline-smoke` because they do not have a live Herdr daemon; local operator/PR-loop runs keep the stronger live `--smoke` before opening a PR. `--status` is included because it is the machine-readable live discovery/connection contract used by agents and docs. `--checkpoint-status` is the pure JSON continuation oracle; it must not spawn Herdr and must report tracker capsule state, ledger validity, git state, and discovery diagnostics. The ledger check validates JSONL shape, hash chain, tracker-ledger coupling, and append-only prefix preservation when a base ref exists.
 
 ### Current observed baseline
 
@@ -70,7 +76,11 @@ This check deliberately exercises F04 by stopping/respawning a local Herdr serve
 | `--status` | `acex-discover` package/skill scan, diagnostics, and live/offline machine-readable status contract |
 | `--checkpoint-status` | No-spawn stateless continuation oracle: tracker capsule, ledger validity, git state, discovery diagnostics |
 | `check-ledger-append-only.py` | JSONL checkpoint ledger schema, hash chain, tracker-ledger coupling, and append-only prefix |
-| `--smoke` | Binary entry + connect path |
+| `--smoke` | Binary entry + connect path; CI uses `--offline --smoke` while local PR automation requires live smoke |
+
+### Foreground PR continuation loop
+
+Use `scripts/omp-pr-loop.ps1` on Windows or `scripts/omp-pr-loop.sh` on Unix-like shells to run one fresh foreground OMP continuation session per PR. The loop uses the verified OMP CLI shape `omp --profile <name> --no-session -p "continue from the last checkpoint"` so each iteration is `/new`-like, isolated to a named profile, and not saved as a resumable session. It validates locally with live smoke before opening a PR, pushes a branch, opens the PR, watches checks, and then waits in the foreground for CODEOWNERS review and merge before starting the next iteration. It does not self-approve or bypass branch protection.
 
 ---
 

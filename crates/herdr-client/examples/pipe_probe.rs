@@ -1,3 +1,4 @@
+#[cfg(windows)]
 fn main() {
     use std::fs::OpenOptions;
     use std::io::{Read, Write};
@@ -35,4 +36,9 @@ fn main() {
             Err(e) => println!("open err: {e}"),
         }
     }
+}
+
+#[cfg(not(windows))]
+fn main() {
+    eprintln!("pipe_probe is a Windows named-pipe probe; use live_herdr tests for portable checks");
 }

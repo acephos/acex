@@ -1,8 +1,15 @@
+#![cfg_attr(not(windows), allow(dead_code))]
+
+#[cfg(windows)]
 use std::fs::OpenOptions;
+#[cfg(windows)]
 use std::io::{Read, Write};
+#[cfg(windows)]
 use std::os::windows::fs::OpenOptionsExt;
+#[cfg(windows)]
 use std::time::{Duration, Instant};
 
+#[cfg(windows)]
 fn read_line(f: &mut impl Read) -> Option<String> {
     let mut buf = Vec::new();
     let mut b = [0u8; 1];
@@ -30,6 +37,7 @@ fn read_line(f: &mut impl Read) -> Option<String> {
     }
 }
 
+#[cfg(windows)]
 fn main() {
     let sock = std::env::var("APPDATA").unwrap() + r"\herdr\herdr.sock";
     let pipe = format!(r"\\.\pipe\{sock}");
@@ -90,4 +98,9 @@ fn main() {
             }
         }
     }
+}
+
+#[cfg(not(windows))]
+fn main() {
+    eprintln!("sub_probe is a Windows named-pipe probe; use live_herdr tests for portable checks");
 }

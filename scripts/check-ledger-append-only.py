@@ -62,7 +62,11 @@ MEANINGFUL_EXACT = {
     "skills/acex-dev/SKILL.md",
     ".github/CODEOWNERS",
     ".github/workflows/ledger.yml",
+    ".github/workflows/verify.yml",
     "scripts/check-ledger-append-only.py",
+    "scripts/verify-pr.sh",
+    "scripts/omp-pr-loop.sh",
+    "scripts/omp-pr-loop.ps1",
     "docs/REPO_PROTECTION.md",
 }
 MEANINGFUL_PREFIXES = (
