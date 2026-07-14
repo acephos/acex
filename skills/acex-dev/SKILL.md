@@ -36,7 +36,7 @@ Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 1. **Discover** — `cargo run -p acex -- --checkpoint-status` for continuation state, or `cargo run -p acex -- --status` for live connection/discovery status.  
 2. **Drop-in metadata** — `.acex/packages/<id>/acex-package.toml` or `packages/<id>/`.  
 3. **Code hooks** — Intent → palette → worker (Recipe A in EXTENDING).  
-4. **Record** — tracker feature status + comment + changelog + exactly one `docs/checkpoint-ledger.jsonl` entry.
+4. **Record** — tracker feature status + comment + changelog + exactly one `docs/checkpoint-ledger.jsonl` entry, then open a PR and watch required checks green before claiming continuation work done.
 
 ## How to add a coded action (summary)
 
@@ -45,20 +45,24 @@ Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 3. Arm in `acex/src/worker.rs` (+ `herdr-client/ops.rs` if new RPC)  
 4. Optional: declare action in a package manifest for discovery  
 5. Update `docs/tracker.html`  
-6. Run the full verify set below before claiming done.
+6. Run the full verify set below, open a PR, and watch required GitHub checks green before claiming done.
 
 ## Verify before claiming done
 
 ```bash
+scripts/verify-pr.sh --base-ref origin/master
+
+# expanded local gates:
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status
 cargo run -p acex -- --checkpoint-status
 cargo run -p acex -- --smoke
+python scripts/check-ledger-append-only.py origin/master
 ```
 
-Use `--status` for machine-readable live conn/packages/skills/diagnostics; use `--checkpoint-status` for no-spawn continuation state; use `--smoke` for the binary connect path. Dated proof belongs in the tracker capsule and checkpoint ledger, not this skill.
+Use `--status` for machine-readable live conn/packages/skills/diagnostics; use `--checkpoint-status` for no-spawn continuation state; use `--smoke` for the binary connect path. Dated proof belongs in the tracker capsule and checkpoint ledger, and checkpoint continuation proof must include the PR URL plus green required CI checks unless the user explicitly requested local-only work.
 
 ## Tracker discipline
 Durable checkpoint facts go in `docs/checkpoint-ledger.jsonl` as append-only JSONL entries; corrections are new entries, not edits to history. File format alone does not guarantee append-only; run `python scripts/check-ledger-append-only.py <base-ref>` when ledger history changes.

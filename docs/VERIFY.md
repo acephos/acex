@@ -6,10 +6,10 @@
 
 | | |
 |--|--|
-| **Purpose** | Single checklist for “is this change shippable?” |
-| **Origin** | Production-ready pass; encodes fmt/clippy/test/smoke bar. |
-| **Status** | Gate for agent PRs and local release confidence. |
-| **Change** | Edit when new gates are added (e.g. MSRV); mirror in AGENTS.md Commands. |
+| **Purpose** | Single checklist for “is this change shippable?” including local gates, PR creation, and green required CI. |
+| **Origin** | Production-ready pass; encodes fmt/clippy/test/smoke bar, later tightened so checkpoint continuations cannot stop before PR + green CI. |
+| **Status** | Gate for agent PRs, checkpoint continuation completion, and local release confidence. |
+| **Change** | Edit when new gates or required PR checks are added (e.g. MSRV); mirror in AGENTS.md Commands and the continuation contract. |
 
 ---
 
@@ -80,16 +80,19 @@ This check deliberately exercises F04 by stopping/respawning a local Herdr serve
 
 ### Foreground PR continuation loop
 
-Use `scripts/omp-pr-loop.ps1` on Windows or `scripts/omp-pr-loop.sh` on Unix-like shells to run one fresh foreground OMP continuation session per PR. The loop uses the verified OMP CLI shape `omp --profile <name> --no-session -p "continue from the last checkpoint"` so each iteration is `/new`-like, isolated to a named profile, and not saved as a resumable session. It validates locally with live smoke before opening a PR, pushes a branch, opens the PR, watches checks, and then waits in the foreground for CODEOWNERS review and merge before starting the next iteration. It does not self-approve or bypass branch protection.
+Use `scripts/omp-pr-loop.ps1` on Windows or `scripts/omp-pr-loop.sh` on Unix-like shells to run one fresh foreground OMP continuation session per PR. The loop uses the verified OMP CLI shape `omp --profile <name> --no-session -p "continue from the last checkpoint"` so each iteration is `/new`-like, isolated to a named profile, and not saved as a resumable session. It validates locally with live smoke before opening a PR, pushes a branch, opens the PR, watches checks, and then waits in the foreground for CODEOWNERS review and merge before starting the next iteration. It does not self-approve or bypass branch protection. For manual checkpoint continuations, the same rule applies: do not yield as done before a PR exists and the required GitHub checks for that PR are green.
 
 ---
 
 ## Agent definition of done
 
-1. Gates above green (or smoke/status offline-honest where Herdr is intentionally unavailable).  
+1. Local gates above green (or smoke/status offline-honest where Herdr is intentionally unavailable).
 2. `docs/tracker.html` updated if intent/scope/status changed; tracker is the sole planning truth. Append durable checkpoint/process facts to `docs/checkpoint-ledger.jsonl`.
-3. No SOUL ownership violations.  
-4. New pure logic has a unit test calling **shipped** functions.
+3. Branch pushed and PR opened for every meaningful checkpoint continuation change.
+4. Required GitHub checks green on the PR, including `ledger / checkpoint-ledger` and `verify / hygiene`.
+5. PR merged when branch protection permits. If Code Owners or another explicit human gate blocks merge, final output must include the PR URL, observed green checks, and the blocker; do not call the work merged.
+6. No SOUL ownership violations.
+7. New pure logic has a unit test calling **shipped** functions.
 
 ---
 
