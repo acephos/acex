@@ -11,7 +11,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Validate checkpoint ledger
+      - name: Resolve base ref
+        id: base
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -19,4 +20,36 @@ jobs:
           else
             base="${{ github.event.before }}"
           fi
-          python scripts/check-ledger-append-only.py "$base"
+          echo "ref=$base" >> "$GITHUB_OUTPUT"
+      - name: Protected prefix check
+        shell: python
+        run: |
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          base = "${{ steps.base.outputs.ref }}"
+          ledger = Path("docs/checkpoint-ledger.jsonl")
+          base_blob = subprocess.run(
+              ["git", "show", f"{base}:{ledger.as_posix()}"],
+              text=True,
+              capture_output=True,
+              check=False,
+          )
+          if base_blob.returncode != 0:
+              print(f"cannot read {ledger} from base {base}", file=sys.stderr)
+              print(base_blob.stderr, file=sys.stderr)
+              raise SystemExit(1)
+          base_lines = base_blob.stdout.splitlines()
+          current_lines = ledger.read_text(encoding="utf-8").splitlines()
+          if len(current_lines) < len(base_lines):
+              print("ledger shrank", file=sys.stderr)
+              raise SystemExit(1)
+          for idx, (old, new) in enumerate(zip(base_lines, current_lines), start=1):
+              if old != new:
+                  print(f"ledger line {idx} changed; append corrections instead", file=sys.stderr)
+                  raise SystemExit(1)
+      - name: Validate checkpoint ledger
+        shell: bash
+        run: |
+          python scripts/check-ledger-append-only.py "${{ steps.base.outputs.ref }}"

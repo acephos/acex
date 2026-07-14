@@ -3,7 +3,7 @@
 | | |
 |--|--|
 | **Path** | `.github/workflows/ledger.yml` |
-| **Purpose** | Run the checkpoint ledger validator on push and pull request so append-only/history checks are not only local convention. |
-| **Origin** | Added with the JSONL checkpoint ledger after external best-practice review: format helps parsing; enforcement needs hooks/CI/server policy. |
+| **Purpose** | Run an inline protected prefix check and then the checkpoint ledger validator on push and pull request so append-only/history checks are not only local convention. |
+| **Origin** | Added with the JSONL checkpoint ledger after external best-practice review: format helps parsing; enforcement needs hooks/CI/server policy. Hardened so PRs cannot rely solely on their mutable branch copy of the validator for prefix preservation. |
 | **Status** | Active GitHub Actions workflow; strongest when paired with branch protection requiring this check. |
-| **How to change** | Keep fetch depth sufficient for base comparison. Do not remove the append-only validator without replacing it with stronger server-side enforcement. |
+| **How to change** | Keep fetch depth sufficient for base comparison. Do not remove the inline prefix check or append-only validator without replacing them with stronger server-side enforcement. |

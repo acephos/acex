@@ -215,13 +215,70 @@
       <a href="#cheat">Cheat</a>
     </nav>
 
+    <script type="application/json" id="acex-checkpoint">
+{
+  "schema_version": 1,
+  "last_updated": "2026-07-14",
+  "active_gate": "G1",
+  "active_phase": "G1 polish",
+  "tracker_live_state_wins": true,
+  "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
+  "latest_comment_id": "2026-07-14-stateless-hardening",
+  "ledger": {
+    "path": "docs/checkpoint-ledger.jsonl",
+    "tail_entries": 3,
+    "latest_hash": "f55cdd8b1b938bdef05bee038323031d2b9bba973eb6d64c4a6115f8ddf46016",
+    "entry_count": 4
+  },
+  "next_ready": [
+    {
+      "id": "F31",
+      "title": "Config-backed start presets",
+      "status": "todo",
+      "phase": "G1 polish",
+      "depends_on": ["F09"],
+      "owner": null,
+      "last_touched": null,
+      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
+      "acceptance": "Start flow exposes configured presets and preserves freeform fallback; status/checkpoint output reports configured presets or an empty list; docs describe config source.",
+      "proof": ["targeted unit tests", "cargo run -p acex -- --checkpoint-status"]
+    },
+    {
+      "id": "F32",
+      "title": "Wait timeout UX",
+      "status": "todo",
+      "phase": "G1 polish",
+      "depends_on": ["F11"],
+      "owner": null,
+      "last_touched": null,
+      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
+      "acceptance": "Wait badges have deterministic timeout/expiry UX; expiry is visible, non-blocking, and event resolution still wins when status arrives first.",
+      "proof": ["model reducer tests for timeout/resolve ordering", "UI smoke or snapshot if available"]
+    },
+    {
+      "id": "F33",
+      "title": "Attach target variants",
+      "status": "todo",
+      "phase": "G1 polish",
+      "depends_on": ["F20"],
+      "owner": null,
+      "last_touched": null,
+      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
+      "acceptance": "Agent attach and session attach are explicit, documented, and robust against missing/invalid targets; errors are actionable.",
+      "proof": ["worker/intent tests or command-construction tests", "manual status/smoke check"]
+    }
+  ],
+  "blocked": []
+}
+    </script>
+
     <!-- NOW -->
     <section id="now" class="box">
       <div class="box-title"><span class="dot live"></span> Now · board status</div>
       <div class="kpi">
         <div class="cell"><div class="n">G1</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">polish</div><div class="l">Next gate</div></div>
-        <div class="cell"><div class="n">29</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">33</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -230,23 +287,24 @@
         <span class="soul">♥</span>
         <p style="margin:0">
           <strong>Active work:</strong> Phase 1 / G1 usable core is in place — board, filters, palette,
-          focus/peek/send/start/wait/zed/attach/worktrees via intent worker.
-          Current work is polish: config-backed start presets, wait timeout UX, attach target variants, then G1.5 expansion.
+          focus/peek/send/start/wait/zed/attach/worktrees via intent worker. Current work is G1 polish.
         </p>
       </div>
-      <h3>* Open blockers</h3>
-      <ul>
-        <li class="dim">Agent start argv freeform only (presets not yet config-backed).</li>
-        <li class="dim">Wait is non-blocking badge (no wall-clock timeout auto-clear).</li>
-        <li class="dim">Attach uses <code>herdr agent attach &lt;target&gt;</code>; session attach is separate palette item.</li>
-      </ul>
+      <h3>* Next ready work</h3>
+      <ol>
+        <li><strong>F31 · Config-backed start presets</strong> — owner=unassigned; deps=F09; proof: targeted unit tests + <code>cargo run -p acex -- --checkpoint-status</code>.</li>
+        <li><strong>F32 · Wait timeout UX</strong> — owner=unassigned; deps=F11; proof: model reducer tests for timeout/resolve ordering + UI smoke/snapshot if available.</li>
+        <li><strong>F33 · Attach target variants</strong> — owner=unassigned; deps=F20; proof: worker/intent or command-construction tests + manual status/smoke.</li>
+      </ol>
+      <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. Open blockers are encoded as F31/F32/F33, not free prose.</p>
       <h3>* Stateless checkpoint</h3>
       <ul>
         <li class="dim">Prompt: “continue from the last checkpoint.”</li>
-        <li class="dim">Read order: SOUL → GOAL → tracker Now/Open blockers/latest Comment → AGENTS.</li>
-        <li class="dim">Durable state is this tracker plus <code>docs/checkpoint-ledger.jsonl</code>: tracker Now/feature matrix/top Comment for live state; JSONL ledger tail for append-only history.</li>
-        <li class="dim">Default next move: pick the first active/doing or unblocked todo item under the active phase, then update tracker and append a JSONL ledger entry before yielding.</li>
+        <li class="dim">Canonical algorithm: <code>AGENTS.md#stateless-continuation-new-session</code>.</li>
+        <li class="dim">Live selector: the <code>acex-checkpoint</code> JSON capsule above; ledger tail = last capsule-declared lines by file order.</li>
+        <li class="dim">Conflict rule: tracker checkpoint capsule wins for current planning; ledger is historical evidence; README/GOAL are orientation.</li>
       </ul>
+
     </section>
 
     <!-- PILLARS -->
@@ -523,6 +581,28 @@
               <td>board metrics + ages</td><td>Parallel agents scannable</td>
               <td><span class="badge m">M</span></td><td>F06</td><td>counts/events/waits; ages later</td>
             </tr>
+            <tr>
+              <td>F31</td><td><span class="st st-todo">todo</span></td>
+              <td>Config-backed start presets</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent.start + config</td><td>Configured presets + freeform fallback; status/checkpoint reports presets or []</td>
+              <td><span class="badge s">S</span></td><td>F09</td>
+              <td>owner=unassigned; last_touched=null; takeover=safe_if_no_owner_or_last_touched_over_24h; proof=targeted unit tests + checkpoint-status; non-goal=runtime plugin execution; decisions=3</td>
+            </tr>
+            <tr>
+              <td>F32</td><td><span class="st st-todo">todo</span></td>
+              <td>Wait timeout UX</td><td class="pri-p0">P0</td><td>1</td>
+              <td>wait/status events</td><td>Expiry visible/non-blocking; status event resolution wins before timeout</td>
+              <td><span class="badge s">S</span></td><td>F11</td>
+              <td>owner=unassigned; last_touched=null; takeover=safe_if_no_owner_or_last_touched_over_24h; proof=model reducer timeout/resolve ordering tests + UI smoke/snapshot if available; non-goal=blocking waits; decisions=8</td>
+            </tr>
+            <tr>
+              <td>F33</td><td><span class="st st-todo">todo</span></td>
+              <td>Attach target variants</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent attach / session attach</td><td>Agent and session attach are explicit; missing/invalid targets return actionable errors</td>
+              <td><span class="badge s">S</span></td><td>F20</td>
+              <td>owner=unassigned; last_touched=null; takeover=safe_if_no_owner_or_last_touched_over_24h; proof=worker/intent or command-construction tests + manual status/smoke; non-goal=embedded terminal; decisions=1,10</td>
+            </tr>
+
           </tbody>
         </table>
       </div>
@@ -531,6 +611,14 @@
     <!-- COMMENTS -->
     <section id="comments" class="box">
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
+
+
+      <div class="comment" id="2026-07-14-stateless-hardening">
+        <div class="meta"><span class="tag">2026-07-14</span> · stateless hardening · agent</div>
+        <p style="margin:0">
+          Added the machine-readable checkpoint capsule as live planning authority, promoted G1 polish blockers to concrete F31–F33 rows, canonicalized continuation in <code>AGENTS.md</code>, hardened ledger validation/CI/CODEOWNERS, and added no-spawn <code>--checkpoint-status</code> with discovery diagnostics. Next pickup is deterministic: F31, then F32, then F33 unless owner/takeover metadata changes.
+        </p>
+      </div>
 
       <div class="comment">
         <div class="meta"><span class="tag">2026-07-14</span> · stateless continuation · agent</div>
@@ -676,6 +764,32 @@
               <td><code>docs/tracker.html</code></td>
               <td>Sole living tracker</td>
             </tr>
+            <tr>
+              <td>Checkpoint ledger</td>
+              <td><code>docs/checkpoint-ledger.jsonl</code></td>
+              <td>append-only hash-chain history; latest hash <code>f55cdd8b...</code></td>
+            </tr>
+            <tr>
+              <td>Checkpoint status oracle</td>
+              <td><code>cargo run -p acex -- --checkpoint-status</code></td>
+              <td>pure JSON; no Herdr spawn; reports git/tracker/ledger/discovery</td>
+            </tr>
+            <tr>
+              <td>Checkpoint status schema</td>
+              <td><code>docs/schemas/acex-checkpoint-status.schema.json</code></td>
+              <td>schema version 1 for continuation oracle JSON</td>
+            </tr>
+            <tr>
+              <td>Ledger validator</td>
+              <td><code>scripts/check-ledger-append-only.py</code></td>
+              <td>strict new-entry schema, hash chain, prefix, tracker-ledger coupling</td>
+            </tr>
+            <tr>
+              <td>Ledger CI / protection</td>
+              <td><code>.github/workflows/ledger.yml</code> · <code>.github/CODEOWNERS</code> · <code>docs/REPO_PROTECTION.md</code></td>
+              <td>inline prefix check, owner review paths, required branch settings</td>
+            </tr>
+
             <tr>
               <td>Herdr API schema</td>
               <td><code>crates/herdr-types/schemas/herdr-api.schema.json</code></td>
@@ -832,6 +946,9 @@
               <tr><td>11</td><td>Self-awareness</td><td>SOUL + GOAL + tracker mandatory</td></tr>
               <tr><td>12</td><td>Windows IPC</td><td>Named pipe <code>\\.\pipe\{abs sock path}</code>; F23 pulled to Phase 0</td></tr>
               <tr><td>13</td><td>Unary RPC</td><td>Connect-per-call; subscribe uses separate long-lived stream</td></tr>
+              <tr><td>14</td><td>Continuation selector</td><td>Tracker <code>acex-checkpoint</code> capsule wins live planning</td></tr>
+              <tr><td>15</td><td>Ledger role</td><td>Append-only historical evidence; not live planning authority</td></tr>
+
             </tbody>
           </table>
         </div>
@@ -842,6 +959,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-14</strong> — Hardened stateless continuation: checkpoint capsule, F31–F33 next-ready rows, fail-closed ledger validator, CI/CODEOWNERS/protection docs, discovery diagnostics, and <code>--checkpoint-status</code>.</li>
         <li><strong>2026-07-14</strong> — Docs reality refresh: 8 crates, G1 usable core, 29-test baseline, protocol 16 / Herdr 0.7.2-preview, packages=1 skills=1.</li>
         <li><strong>2026-07-14</strong> — Added append-only JSONL checkpoint ledger at <code>docs/checkpoint-ledger.jsonl</code>.</li>
         <li><strong>2026-07-14</strong> — Added stateless continuation checkpoint contract for fresh agent sessions.</li>
@@ -888,12 +1006,12 @@
     <section id="howto" class="box">
       <div class="box-title"><span class="dot"></span> How agents update this tracker</div>
       <ol>
-        <li>Change status badges on features/crates/phases.</li>
-        <li>Prepend a <strong>Comment</strong> with date · topic · actor.</li>
-        <li>Append <strong>checkpoint-ledger.jsonl</strong> entry for checkpoint/process facts; never rewrite old ledger entries.</li>
+        <li>Change status badges on features/crates/phases and keep the <code>acex-checkpoint</code> capsule in sync.</li>
+        <li>Prepend a <strong>Comment</strong> with date · topic · actor and set capsule <code>latest_comment_id</code>.</li>
+        <li>Append exactly one <strong>checkpoint-ledger.jsonl</strong> entry for meaningful planning/docs/status changes; never rewrite old ledger entries.</li>
         <li>Add <strong>Artifacts</strong> rows for new durable files.</li>
         <li>Append <strong>Changelog</strong> line.</li>
-        <li>Bump “Last updated” in the hero.</li>
+        <li>Bump “Last updated” in the hero and capsule.</li>
         <li>If philosophy shifts → edit SOUL/GOAL and Decision row.</li>
       </ol>
       <p class="dim">No other planning doc replaces this page. Chat is not memory.</p>

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/local/acex/docs/schemas/acex-checkpoint-status.schema.json",
+  "title": "acex checkpoint status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_root",
+    "git",
+    "tracker",
+    "ledger",
+    "herdr",
+    "discovery",
+    "config"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project_root": { "type": "string", "minLength": 1 },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "commit", "dirty"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 },
+        "dirty": { "type": "boolean" }
+      }
+    },
+    "tracker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "valid",
+        "error",
+        "last_updated",
+        "checkpoint_schema_version",
+        "active_phase",
+        "next_ready",
+        "latest_comment_id"
+      ],
+      "properties": {
+        "path": { "const": "docs/tracker.html" },
+        "valid": { "type": "boolean" },
+        "error": { "type": ["string", "null"] },
+        "last_updated": { "type": ["string", "null"] },
+        "checkpoint_schema_version": { "type": ["integer", "null"] },
+        "active_phase": { "type": ["string", "null"] },
+        "next_ready": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^F[0-9]+$" }
+        },
+        "latest_comment_id": { "type": ["string", "null"] }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "entries", "latest_hash", "valid", "error"],
+      "properties": {
+        "path": { "const": "docs/checkpoint-ledger.jsonl" },
+        "entries": { "type": "integer", "minimum": 0 },
+        "latest_hash": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "valid": { "type": "boolean" },
+        "error": { "type": ["string", "null"] }
+      }
+    },
+    "herdr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side_effects", "conn", "protocol", "version", "socket_target"],
+      "properties": {
+        "side_effects": { "enum": ["none", "connected", "spawn_attempted"] },
+        "conn": { "enum": ["Live", "Offline", "Unknown"] },
+        "protocol": { "type": "integer" },
+        "version": { "type": "string" },
+        "socket_target": { "type": "string" }
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packages", "skills", "diagnostics"],
+      "properties": {
+        "packages": { "type": "array" },
+        "skills": { "type": "array" },
+        "diagnostics": { "type": "array" }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_presets"],
+      "properties": {
+        "start_presets": { "type": "array" }
+      }
+    }
+  }
+}

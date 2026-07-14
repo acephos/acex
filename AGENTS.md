@@ -18,7 +18,7 @@ You are collaborating on **acex**: a Herdr-centric agent-dev control plane.
 **Skill:** load [skills/acex-dev/SKILL.md](./skills/acex-dev/SKILL.md) when modifying this repo.
 
 **Drop-in packages:** place `acex-package.toml` under `.acex/packages/<id>/` or `packages/<id>/`.  
-List with `cargo run -p acex -- --status` (JSON: `packages`, `skills`). Current repo discovery is packages=1 (`example-board-hints`) and skills=1 (`acex-dev`).
+List with `cargo run -p acex -- --status` (JSON: `packages`, `skills`, `diagnostics`). Use `cargo run -p acex -- --checkpoint-status` for no-spawn continuation state.
 
 **Lineage:** [docs/biographies/INDEX.md](./docs/biographies/INDEX.md) — every durable artifact’s purpose → origin → status → how to change.
 
@@ -26,14 +26,19 @@ Chat history is **not** project memory.
 
 ## Stateless continuation (new session)
 
-If the operator says “continue from the last checkpoint,” do **not** rely on chat history. Treat this repo as the checkpoint:
+Canonical algorithm for the prompt “continue from the last checkpoint”:
 
-1. Read `SOUL.md`, `GOAL.md`, `docs/tracker.html` → Now/Open blockers/latest Comment, then this file.
-2. Read the tail of `docs/checkpoint-ledger.jsonl` for append-only checkpoint history.
-3. Treat tracker Now + Open blockers + latest Comment + feature matrix as current state; use the ledger for historical facts.
-4. If no explicit task is given, pick the first tracker item that is `doing` or an unblocked `todo` under the active phase.
-5. Run `cargo run -p acex -- --status` before coding when the task depends on current Herdr/discovery reality.
-6. When done, update tracker status/comment/changelog/Last updated and append a ledger entry so the next stateless agent can resume with no chat context.
+1. Read `SOUL.md`, `GOAL.md`, then this file for identity, gate, and operating rules.
+2. Read tracker live state from the checkpoint capsule: `<script type="application/json" id="acex-checkpoint">` in `docs/tracker.html`.
+3. Validate the capsule. If it is missing, malformed, or internally inconsistent, stop and fix the tracker checkpoint before coding.
+4. Use capsule selectors exactly:
+   - tracker live state = the checkpoint capsule in `docs/tracker.html`;
+   - latest comment = `latest_comment_id` from the capsule; only if the capsule is missing while repairing it, fall back to the first comment under `#comments`;
+   - ledger tail = the last `ledger.tail_entries` lines of `docs/checkpoint-ledger.jsonl` by file order;
+   - next work = the ordered `next_ready` array, skipping only items whose dependencies are not met or that have a current owner inside the takeover window.
+5. Conflict rule: for current planning, the tracker checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. The ledger is historical evidence; GOAL/README are orientation.
+6. Run `cargo run -p acex -- --checkpoint-status` before coding when the task depends on repo state, ledger tail, or discovery diagnostics. This mode must not spawn Herdr.
+7. When done, update tracker status/comment/changelog/Last updated and append exactly one JSONL ledger entry for the meaningful change before yielding.
 
 
 ---
@@ -162,9 +167,10 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status
+cargo run -p acex -- --checkpoint-status
 cargo run -p acex -- --smoke
 ```
-Observed 2026-07-14: workspace tests 29 passed; live status/smoke and offline status OK.
+Use the tracker checkpoint capsule and latest ledger entry for dated proof; do not let this command list become a competing planning baseline.
 
 
 Optional: `HERDR_E2E=1 cargo test -p herdr-client --test live_herdr -- --nocapture`

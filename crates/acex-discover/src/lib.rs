@@ -83,11 +83,42 @@ pub struct SkillSummary {
     pub path: PathBuf,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DiscoveryDiagnosticSeverity {
+    Warning,
+    Error,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DiscoveryDiagnostic {
+    pub severity: DiscoveryDiagnosticSeverity,
+    pub code: String,
+    pub path: PathBuf,
+    pub message: String,
+}
+
+impl DiscoveryDiagnostic {
+    fn error(
+        code: impl Into<String>,
+        path: impl Into<PathBuf>,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            severity: DiscoveryDiagnosticSeverity::Error,
+            code: code.into(),
+            path: path.into(),
+            message: message.into(),
+        }
+    }
+}
+
 /// Full discovery result for a project root.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct DiscoveryReport {
     pub packages: Vec<PackageSummary>,
     pub skills: Vec<SkillSummary>,
+    pub diagnostics: Vec<DiscoveryDiagnostic>,
 }
 
 /// Scan `project_root` for packages and skills.
@@ -99,16 +130,26 @@ pub fn scan(project_root: impl AsRef<Path>) -> Result<DiscoveryReport> {
         root.join(".acex").join("packages"),
         PackageSource::AcexDot,
         &mut report.packages,
+        &mut report.diagnostics,
     )?;
     scan_package_tree(
         root.join("packages"),
         PackageSource::PackagesDir,
         &mut report.packages,
+        &mut report.diagnostics,
     )?;
 
-    scan_skills_dir(root.join("skills"), &mut report.skills)?;
+    scan_skills_dir(
+        root.join("skills"),
+        &mut report.skills,
+        &mut report.diagnostics,
+    )?;
     // Pi also uses .agents/skills — optional project convention
-    scan_skills_dir(root.join(".agents").join("skills"), &mut report.skills)?;
+    scan_skills_dir(
+        root.join(".agents").join("skills"),
+        &mut report.skills,
+        &mut report.diagnostics,
+    )?;
 
     report.packages.sort_by(|a, b| a.name.cmp(&b.name));
     report.skills.sort_by(|a, b| a.name.cmp(&b.name));
@@ -119,13 +160,46 @@ fn scan_package_tree(
     dir: PathBuf,
     source: PackageSource,
     out: &mut Vec<PackageSummary>,
+    diagnostics: &mut Vec<DiscoveryDiagnostic>,
 ) -> Result<()> {
     if !dir.is_dir() {
         return Ok(());
     }
-    for entry in fs::read_dir(&dir)? {
-        let entry = entry?;
-        if !entry.file_type()?.is_dir() {
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(err) => {
+            diagnostics.push(DiscoveryDiagnostic::error(
+                "scan_error",
+                dir,
+                format!("cannot read package directory: {err}"),
+            ));
+            return Ok(());
+        }
+    };
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                diagnostics.push(DiscoveryDiagnostic::error(
+                    "scan_error",
+                    &dir,
+                    format!("cannot read package entry: {err}"),
+                ));
+                continue;
+            }
+        };
+        let file_type = match entry.file_type() {
+            Ok(file_type) => file_type,
+            Err(err) => {
+                diagnostics.push(DiscoveryDiagnostic::error(
+                    "scan_error",
+                    entry.path(),
+                    format!("cannot read package entry type: {err}"),
+                ));
+                continue;
+            }
+        };
+        if !file_type.is_dir() {
             continue;
         }
         let manifest_path = entry.path().join("acex-package.toml");
@@ -134,11 +208,11 @@ fn scan_package_tree(
         }
         match load_package_summary(&manifest_path, source) {
             Ok(s) => out.push(s),
-            Err(e) => {
-                // Skip invalid packages but keep scanning (Pi warns; we surface via empty skip).
-                // For pure API: invalid package is an error only when loading that path.
-                let _ = e;
-            }
+            Err(e) => diagnostics.push(DiscoveryDiagnostic::error(
+                "invalid_package_manifest",
+                manifest_path,
+                e.to_string(),
+            )),
         }
     }
     Ok(())
@@ -178,21 +252,62 @@ pub fn load_package(manifest_path: impl AsRef<Path>) -> Result<PackageManifest> 
     Ok(m)
 }
 
-fn scan_skills_dir(dir: PathBuf, out: &mut Vec<SkillSummary>) -> Result<()> {
+fn scan_skills_dir(
+    dir: PathBuf,
+    out: &mut Vec<SkillSummary>,
+    diagnostics: &mut Vec<DiscoveryDiagnostic>,
+) -> Result<()> {
     if !dir.is_dir() {
         return Ok(());
     }
-    for entry in fs::read_dir(&dir)? {
-        let entry = entry?;
-        if !entry.file_type()?.is_dir() {
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(err) => {
+            diagnostics.push(DiscoveryDiagnostic::error(
+                "scan_error",
+                dir,
+                format!("cannot read skills directory: {err}"),
+            ));
+            return Ok(());
+        }
+    };
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                diagnostics.push(DiscoveryDiagnostic::error(
+                    "scan_error",
+                    &dir,
+                    format!("cannot read skill entry: {err}"),
+                ));
+                continue;
+            }
+        };
+        let file_type = match entry.file_type() {
+            Ok(file_type) => file_type,
+            Err(err) => {
+                diagnostics.push(DiscoveryDiagnostic::error(
+                    "scan_error",
+                    entry.path(),
+                    format!("cannot read skill entry type: {err}"),
+                ));
+                continue;
+            }
+        };
+        if !file_type.is_dir() {
             continue;
         }
         let skill_md = entry.path().join("SKILL.md");
         if !skill_md.is_file() {
             continue;
         }
-        if let Ok(s) = parse_skill_frontmatter(&skill_md) {
-            out.push(s);
+        match parse_skill_frontmatter(&skill_md) {
+            Ok(s) => out.push(s),
+            Err(e) => diagnostics.push(DiscoveryDiagnostic::error(
+                "invalid_skill_frontmatter",
+                skill_md,
+                e.to_string(),
+            )),
         }
     }
     Ok(())
@@ -328,6 +443,7 @@ intent = "FocusSelected"
         assert_eq!(report.skills.len(), 1);
         assert_eq!(report.skills[0].name, "acex-dev");
         assert!(report.skills[0].description.contains("control plane"));
+        assert!(report.diagnostics.is_empty());
 
         // Progressive detail
         let full = load_package(pkg.join("acex-package.toml")).unwrap();
@@ -341,6 +457,7 @@ intent = "FocusSelected"
         let report = scan(dir.path()).unwrap();
         assert!(report.packages.is_empty());
         assert!(report.skills.is_empty());
+        assert!(report.diagnostics.is_empty());
     }
 
     #[test]
@@ -356,6 +473,7 @@ intent = "FocusSelected"
         let report = scan(dir.path()).unwrap();
         assert_eq!(report.packages.len(), 1);
         assert_eq!(report.packages[0].source, PackageSource::PackagesDir);
+        assert!(report.diagnostics.is_empty());
     }
 
     #[test]
@@ -376,5 +494,35 @@ intent = "FocusSelected"
             matches!(err2, DiscoverError::Invalid { .. }),
             "got {err2:?}"
         );
+    }
+
+    #[test]
+    fn scan_reports_invalid_package_manifest() {
+        let dir = tempdir().unwrap();
+        let pkg = dir.path().join("packages").join("broken");
+        fs::create_dir_all(&pkg).unwrap();
+        fs::write(pkg.join("acex-package.toml"), "name = \"broken\"\n").unwrap();
+
+        let report = scan(dir.path()).unwrap();
+        assert!(report.packages.is_empty());
+        assert_eq!(report.diagnostics.len(), 1);
+        assert_eq!(report.diagnostics[0].code, "invalid_package_manifest");
+        assert!(report.diagnostics[0].message.contains("toml"));
+    }
+
+    #[test]
+    fn scan_reports_invalid_skill_frontmatter() {
+        let dir = tempdir().unwrap();
+        let skill = dir.path().join("skills").join("broken");
+        fs::create_dir_all(&skill).unwrap();
+        fs::write(skill.join("SKILL.md"), "# no frontmatter\n").unwrap();
+
+        let report = scan(dir.path()).unwrap();
+        assert!(report.skills.is_empty());
+        assert_eq!(report.diagnostics.len(), 1);
+        assert_eq!(report.diagnostics[0].code, "invalid_skill_frontmatter");
+        assert!(report.diagnostics[0]
+            .message
+            .contains("missing name/description"));
     }
 }

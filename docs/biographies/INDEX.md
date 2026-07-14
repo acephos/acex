@@ -14,6 +14,9 @@ Current workspace: 8 crates; `docs/tracker.html` is the sole planning truth.
 | Checkpoint ledger | [checkpoint-ledger.md](./checkpoint-ledger.md) |
 | Ledger validator | [ledger-validator.md](./ledger-validator.md) |
 | Ledger CI | [ledger-ci.md](./ledger-ci.md) |
+| CODEOWNERS | [codeowners.md](./codeowners.md) |
+| Repository protection | [repo-protection.md](./repo-protection.md) |
+| Checkpoint status schema | [checkpoint-status-schema.md](./checkpoint-status-schema.md) |
 | Architecture | [../ARCHITECTURE.md](../ARCHITECTURE.md) (self-bio) |
 | Extension contract | [../EXTENDING.md](../EXTENDING.md) (self-bio) |
 | Verify gates | [../VERIFY.md](../VERIFY.md) (self-bio) |

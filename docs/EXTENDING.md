@@ -46,7 +46,7 @@ intent = "FocusSelected"   # known compile-time Intent; manifests do not create 
 
 ```bash
 cargo run -p acex -- --status
-# emits acex_status, packages, skills, and seams; current repo baseline is packages=1 skills=1
+# emits acex_status, packages, skills, diagnostics, and seams
 ```
 
 `--status` lists package summaries and skill summaries. Package manifests may declare skill paths for metadata/detail, while shipped skill summary scanning enumerates repo skill roots such as `skills/*/SKILL.md`.
@@ -100,9 +100,15 @@ If you need a new Herdr method, add it on `HerdrClient` in `crates/herdr-client/
 Current unary Herdr surface: `ping` and `session.snapshot` in `HerdrClient`; `ops.rs` wraps `agent.list`, `agent.get`, `agent.focus`, `agent.send`, `agent.read`, `pane.read`, `agent.start`, `worktree.list`, and `notification.show`.
 
 
-### 4. Tracker
+### 4. Tracker + ledger
 
-In `docs/tracker.html`: set feature status, prepend a **Comment**, append **Changelog** line.
+In `docs/tracker.html`:
+
+1. Set the feature status.
+2. Prepend a **Comment**.
+3. Append a **Changelog** line.
+4. Append exactly one JSONL entry to `docs/checkpoint-ledger.jsonl` for the meaningful change.
+5. Run `python scripts/check-ledger-append-only.py <base-ref>`.
 
 ### 5. Verify
 
@@ -111,9 +117,10 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status
+cargo run -p acex -- --checkpoint-status
 cargo run -p acex -- --smoke
 ```
-For discovery-only changes, also run `cargo run -p acex -- --status`. Observed 2026-07-14: workspace tests 29 passed; live smoke/status and offline status OK.
+For discovery-only changes, also run `cargo run -p acex -- --status`; for continuation-affecting changes, run `cargo run -p acex -- --checkpoint-status` and update the schema/golden contract when output changes.
 
 
 **Invariants:** UI does not open sockets; model does not spawn processes; worker does not draw.

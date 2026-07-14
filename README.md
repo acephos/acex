@@ -29,14 +29,13 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 | [docs/biographies/INDEX.md](./docs/biographies/INDEX.md) | Artifact lineage (biographies) |
 | [skills/acex-dev/SKILL.md](./skills/acex-dev/SKILL.md) | Project skill for drop-in agents |
 
-**Continue from last checkpoint:** open the repo in a new agent session and ask it to “continue from the last checkpoint.” The agent should read `AGENTS.md`, `docs/tracker.html`, and the tail of `docs/checkpoint-ledger.jsonl`; tracker Now/Open blockers/latest Comment are the live checkpoint, while the JSONL ledger is the append-only audit trail.
+**Continue from last checkpoint:** follow [AGENTS.md#stateless-continuation-new-session](./AGENTS.md#stateless-continuation-new-session). In one line: the tracker checkpoint capsule is live planning state; the JSONL ledger is historical evidence.
 
 **Pillars:** Extensibility · Platform-agnostic core · Performance under agentic load · Interpretable observability.
 
 ## Status
 
-Phase **0 / G0 complete**. Phase **1 / G1 usable core** is in place: board, filters, palette, focus, peek, send, start, wait, Zed open, attach, worktree list, reconnect/resnapshot. Remaining work is G1 polish and G1.5 expansion.
-Observed 2026-07-14: `fmt`, `clippy -D warnings`, workspace tests (29 passed), live `--status`/`--smoke`, and offline `--status` are OK.
+Phase **0 / G0 complete**. Phase **1 / G1 usable core** is in place: board, filters, palette, focus, peek, send, start, wait, Zed open, attach, worktree list, reconnect/resnapshot. Current next-ready work comes from the checkpoint capsule in `docs/tracker.html`; use `cargo run -p acex -- --checkpoint-status` for the machine-readable continuation oracle.
 
 ```bash
 start docs/tracker.html   # Windows
@@ -69,11 +68,12 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status           # Machine-readable conn/packages/skills
+cargo run -p acex -- --checkpoint-status # Pure JSON continuation oracle; no Herdr spawn
 cargo run -p acex -- --smoke            # Live or actionable offline + discovery JSON
 cargo run -p acex -- --smoke-reconnect  # F04 reconnect path; may mutate local Herdr server
 cargo run -p acex                       # TUI (q quit)
 ```
-Observed Herdr schema/protocol: protocol 16, Herdr 0.7.2-preview (2026-07-14); `herdr-types` schema artifact is protocol 16. Current discovery reports packages=1 (`packages/example-board-hints/acex-package.toml`) and skills=1 (`skills/acex-dev/SKILL.md`).
+Observed Herdr schema/protocol: protocol 16, Herdr 0.7.2-preview (2026-07-14); `herdr-types` schema artifact is protocol 16. Current discovery and continuation state are machine-readable via `--status` and `--checkpoint-status`.
 
 
 **Drop-in package dirs:** `.acex/packages/*/acex-package.toml`, `packages/*/acex-package.toml`, `skills/*/SKILL.md`.

@@ -2,9 +2,11 @@
 //!
 //! See SOUL.md, GOAL.md, AGENTS.md, docs/tracker.html.
 
+mod checkpoint_status;
 mod sync_util;
 mod worker;
 
+use checkpoint_status::{build_checkpoint_status, collect_git_info};
 use sync_util::lock_store;
 
 use std::path::PathBuf;
@@ -26,21 +28,25 @@ use tracing::{error, info, warn};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
-        .with_writer(std::io::stderr)
-        .init();
-
-    let cfg = Config::load();
     let args: Vec<String> = std::env::args().collect();
     let offline = args.iter().any(|a| a == "--offline");
     let smoke = args.iter().any(|a| a == "--smoke");
     let smoke_reconnect = args.iter().any(|a| a == "--smoke-reconnect");
     // Machine-readable discovery + connection summary (Pi-like JSON surface).
     let status = args.iter().any(|a| a == "--status");
+    let checkpoint_status = args.iter().any(|a| a == "--checkpoint-status");
+
+    if !checkpoint_status {
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                tracing_subscriber::EnvFilter::try_from_default_env()
+                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+            )
+            .with_writer(std::io::stderr)
+            .init();
+    }
+
+    let cfg = Config::load();
 
     info!(
         editor = %cfg.editor_bin,
@@ -61,6 +67,17 @@ async fn main() -> anyhow::Result<()> {
 
     let target = resolve_socket_path(cfg.socket_path.clone(), cfg.session.clone());
     let spawn = cfg.spawn_herdr_if_missing;
+
+    if checkpoint_status {
+        let discovery = discover_project();
+        let root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let body = build_checkpoint_status(&root, &target, &discovery, collect_git_info(&root));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&body).unwrap_or_else(|_| "{}".into())
+        );
+        return Ok(());
+    }
 
     if offline {
         store.conn = ConnState::Offline;
@@ -200,9 +217,9 @@ fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: b
         .iter()
         .map(|p| {
             serde_json::json!({
-                "name": p.name,
-                "description": p.description,
-                "path": p.path,
+                "name": p.name.as_str(),
+                "description": p.description.as_str(),
+                "path": p.path.to_string_lossy(),
                 "source": p.source,
             })
         })
@@ -212,9 +229,21 @@ fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: b
         .iter()
         .map(|s| {
             serde_json::json!({
-                "name": s.name,
-                "description": s.description,
-                "path": s.path,
+                "name": s.name.as_str(),
+                "description": s.description.as_str(),
+                "path": s.path.to_string_lossy(),
+            })
+        })
+        .collect();
+    let diagnostics: Vec<serde_json::Value> = discovery
+        .diagnostics
+        .iter()
+        .map(|d| {
+            serde_json::json!({
+                "severity": d.severity,
+                "code": d.code.as_str(),
+                "path": d.path.to_string_lossy(),
+                "message": d.message.as_str(),
             })
         })
         .collect();
@@ -230,8 +259,17 @@ fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: b
         "reconnects": store.reconnect_count,
         "snapshot_gen": store.snapshot_gen,
         "error": store.last_error,
-        "packages": packages,
-        "skills": skills,
+        "packages": packages.clone(),
+        "skills": skills.clone(),
+        "diagnostics": diagnostics.clone(),
+        "discovery": {
+            "packages": packages,
+            "skills": skills,
+            "diagnostics": diagnostics,
+        },
+        "config": {
+            "start_presets": []
+        },
         "seams": [
             "Intent",
             "Transport",

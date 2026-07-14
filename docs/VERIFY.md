@@ -20,19 +20,15 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status
+cargo run -p acex -- --checkpoint-status
 cargo run -p acex -- --smoke
 python scripts/check-ledger-append-only.py origin/master
 ```
-`--status` is included because it is the machine-readable discovery/connection contract used by agents and docs. The ledger check validates JSONL shape, hash chain, and append-only prefix preservation when a base ref exists.
+`--status` is included because it is the machine-readable live discovery/connection contract used by agents and docs. `--checkpoint-status` is the pure JSON continuation oracle; it must not spawn Herdr and must report tracker capsule state, ledger validity, git state, and discovery diagnostics. The ledger check validates JSONL shape, hash chain, tracker-ledger coupling, and append-only prefix preservation when a base ref exists.
 
-### Current observed baseline (2026-07-14)
+### Current observed baseline
 
-- `cargo fmt --all -- --check` — OK
-- `cargo clippy --workspace --all-targets -- -D warnings` — OK
-- `cargo test --workspace` — OK, 29 passed
-- `cargo run -p acex -- --status` — OK live; offline status also OK
-- `cargo run -p acex -- --smoke` — OK live
-- Current discovery: packages=1, skills=1
+Use the tracker checkpoint capsule and latest ledger entry for dated proof. Do not treat this section as live planning truth.
 
 
 ### Smoke outcomes (both acceptable)
@@ -41,7 +37,8 @@ python scripts/check-ledger-append-only.py origin/master
 |---------|---------|
 | `conn=Live` … | Herdr reachable; control plane healthy |
 | Offline / actionable `err=…` without panic | Herdr missing/down; product failed closed honestly |
-| `--status` JSON with `acex_status`, `conn`, `packages`, `skills`, `seams` | Machine-readable status/discovery contract healthy |
+| `--status` JSON with `acex_status`, `conn`, `packages`, `skills`, `diagnostics`, and `seams` | Machine-readable status/discovery contract healthy |
+| `--checkpoint-status` JSON with `schema_version`, `git`, `tracker`, `ledger`, `herdr.side_effects=none`, and `discovery.diagnostics` | Stateless continuation oracle healthy |
 
 Never treat a panic backtrace as success.
 
@@ -69,9 +66,10 @@ This check deliberately exercises F04 by stopping/respawning a local Herdr serve
 |------|----------|
 | `fmt` | Diff noise, reviewability |
 | `clippy -D warnings` | Footguns, dead code, needless clones |
-| `test --workspace` | Pure reducers, resolve, mock RPC, discovery fixtures |
-| `--status` | `acex-discover` package/skill scan and machine-readable status contract |
-| `check-ledger-append-only.py` | JSONL checkpoint ledger shape, hash chain, and append-only prefix |
+| `test --workspace` | Pure reducers, resolve, mock RPC, discovery fixtures, checkpoint status golden contract |
+| `--status` | `acex-discover` package/skill scan, diagnostics, and live/offline machine-readable status contract |
+| `--checkpoint-status` | No-spawn stateless continuation oracle: tracker capsule, ledger validity, git state, discovery diagnostics |
+| `check-ledger-append-only.py` | JSONL checkpoint ledger schema, hash chain, tracker-ledger coupling, and append-only prefix |
 | `--smoke` | Binary entry + connect path |
 
 ---

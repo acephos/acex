@@ -42,7 +42,7 @@ acex (bin)           compose: bootstrap, live loop, discovery, intent worker, CL
 ## Runtime data flow
 
 ```
-discover/status: cwd → acex_discover::scan → --status/--smoke JSON packages+skills summaries
+discover/status: cwd → acex_discover::scan → --status/--checkpoint-status JSON packages+skills+diagnostics
 
 bootstrap: ping → session.snapshot → Store::apply_snapshot
            optional agent.list merge
@@ -54,6 +54,8 @@ unary:     UI Intent → mpsc → worker → HerdrClient::request (connect-per-c
            → agent.focus/send/read/start/list/get, pane.read, worktree.list, notification.show → Store patch
 
 resync:    stream drop → resync_with_backoff → apply_resnapshot → resubscribe
+
+checkpoint: no Herdr connect/spawn → parse tracker checkpoint capsule + ledger hash chain + git state + discovery diagnostics → pure JSON continuation oracle
 ```
 
 ### Transport rules
