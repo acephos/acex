@@ -8,7 +8,7 @@
 |--|--|
 | **Purpose** | Name crate boundaries, data flow, and extension seams so agents change the right layer. |
 | **Origin** | Scaffolded with Phase 0 cargo workspace; refined through F01–F14 control-plane work and the `acex-discover` package/skill discovery pass. |
-| **Status** | Phase 0/G0 done; Phase 1/G1 usable core: board, palette, focus, peek, send, start, wait, Zed, attach, worktrees; polish remains. |
+| **Status** | G0/G1 done and usable: board, palette, focus, peek, send, start, wait, Zed, attach, worktrees; active phase is recommended G1.5. |
 | **Change** | Edit this file when ownership or data-flow changes; note decision in `docs/tracker.html`. |
 
 ---

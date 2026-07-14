@@ -223,12 +223,12 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-checkpoint-pr-dod",
+  "latest_comment_id": "2026-07-15-docs-freshness-audit",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "70b9139fa3a51c4272cd67415c3b5a879f24ec1d88bf03ef8058fd0f3d786cc5",
-    "entry_count": 7
+    "latest_hash": "1f90b08a8de2863fbfbaf5b79338b65d182d0b1ebec3281df0bf84ac9e3e5e54",
+    "entry_count": 8
   },
   "next_ready": [
     {
@@ -312,8 +312,8 @@
     <section id="now" class="box">
       <div class="box-title"><span class="dot live"></span> Now · board status</div>
       <div class="kpi">
-        <div class="cell"><div class="n">G1</div><div class="l">Phase</div></div>
-        <div class="cell"><div class="n">polish</div><div class="l">Next gate</div></div>
+        <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
+        <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
         <div class="cell"><div class="n">46</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
@@ -612,10 +612,10 @@
               <td><span class="badge m">M</span></td><td>F14</td><td>palette.rs + Intent worker</td>
             </tr>
             <tr>
-              <td>F30</td><td><span class="st st-doing">doing</span></td>
+              <td>F30</td><td><span class="st st-done">done</span></td>
               <td>Observability surface</td><td class="pri-p1">P1</td><td>1</td>
               <td>board metrics + ages</td><td>Parallel agents scannable</td>
-              <td><span class="badge m">M</span></td><td>F06</td><td>counts/events/waits; ages later</td>
+              <td><span class="badge m">M</span></td><td>F06</td><td>counts/events/waits shipped; richer ages deferred to G2 polish if needed</td>
             </tr>
             <tr>
               <td>F31</td><td><span class="st st-done">done</span></td>
@@ -649,6 +649,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-docs-freshness-audit">
+        <div class="meta"><span class="tag">2026-07-15</span> · Docs freshness audit · agent</div>
+        <p style="margin:0">
+          Audited top-level docs, tracker sections, biographies, scripts, and workflows against live checkpoint/status facts. Refreshed stale phase language to G1.5 recommended, expanded Herdr version strings to <code>0.7.2-preview.2026-07-07-f5354780e4ef</code>, updated the observed workspace-test baseline to 46, and made the F30 observability scope decision explicit instead of leaving an ambiguous active row.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-checkpoint-pr-dod">
         <div class="meta"><span class="tag">2026-07-15</span> · Checkpoint PR definition of done · agent</div>
@@ -687,7 +694,7 @@
       <div class="comment" id="2026-07-14-stateless-hardening">
         <div class="meta"><span class="tag">2026-07-14</span> · stateless hardening · agent</div>
         <p style="margin:0">
-          Added the machine-readable checkpoint capsule as live planning authority, promoted G1 polish blockers to concrete F31–F33 rows, canonicalized continuation in <code>AGENTS.md</code>, hardened ledger validation/CI/CODEOWNERS, and added no-spawn <code>--checkpoint-status</code> with discovery diagnostics. Next pickup is deterministic: F31, then F32, then F33 unless owner/takeover metadata changes.
+          Added the machine-readable checkpoint capsule as live planning authority, promoted G1 polish blockers to concrete F31–F33 rows, canonicalized continuation in <code>AGENTS.md</code>, hardened ledger validation/CI/CODEOWNERS, and added no-spawn <code>--checkpoint-status</code> with discovery diagnostics. Historical pickup guidance was F31→F32→F33; current next-ready work is the checkpoint capsule list.
         </p>
       </div>
 
@@ -695,8 +702,7 @@
         <div class="meta"><span class="tag">2026-07-14</span> · stateless continuation · agent</div>
         <p style="margin:0">
           Added explicit continuation contract: a fresh agent told “continue from the last checkpoint” should use
-          tracker Now/Open blockers/latest Comment/feature matrix as durable state, not chat history. Default next work
-          remains G1 polish: start presets, wait timeout UX, attach variants, then G1.5 items.
+          tracker Now/Open blockers/latest Comment/feature matrix as durable state, not chat history. Historical next work was G1 polish; current next work is always the checkpoint capsule <code>next_ready</code> list.
           JSONL checkpoint ledger added at <code>docs/checkpoint-ledger.jsonl</code>; future meaningful changes should update
           tracker live state and append a ledger entry so history is robust against mutable tracker sections. File format alone does not guarantee append-only; prefix checks/CI must enforce it.
         </p>
@@ -705,10 +711,10 @@
       <div class="comment">
         <div class="meta"><span class="tag">2026-07-14</span> · docs reality refresh · agent</div>
         <p style="margin:0">
-          Refreshed docs against current repo reality: 8 workspace crates including <code>acex-discover</code>;
-          Phase 0/G0 done; Phase 1/G1 usable core in place; observed verify baseline is fmt, clippy,
-          workspace tests (29 passed), live status/smoke, and offline status. Herdr protocol remains 16
-          with observed Herdr <code>0.7.2-preview</code>; discovery baseline is packages=1 skills=1.
+          Refreshed docs against repo reality at that checkpoint: 8 workspace crates including <code>acex-discover</code>;
+          Phase 0/G0 done; Phase 1/G1 usable core in place; current observed verify baseline is fmt, clippy,
+          workspace tests (46 passed), live status/smoke, and offline status. Herdr protocol remains 16
+          with observed Herdr <code>0.7.2-preview.2026-07-07-f5354780e4ef</code>; discovery baseline is packages=1 skills=1.
         </p>
       </div>
 
@@ -729,7 +735,7 @@
           Agent-first maintainability: <code>docs/ARCHITECTURE.md</code>, <code>EXTENDING.md</code>,
           <code>VERIFY.md</code>, <code>docs/biographies/*</code>, skill <code>skills/acex-dev</code>.
           Hygiene baseline now records <code>fmt --check</code>, <code>clippy -D warnings</code>,
-          <code>cargo test --workspace</code> (29 passed), live <code>--status</code>/<code>--smoke</code>,
+          <code>cargo test --workspace</code> (current baseline 46 passed), live <code>--status</code>/<code>--smoke</code>,
           and offline <code>--status</code>. Poison-safe store locks. Expanded unit tests on shipped model/client/discovery paths.
         </p>
       </div>
@@ -838,7 +844,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>70b9139f...</code></td>
+              <td>append-only hash-chain history; latest hash <code>1f90b08a...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -875,7 +881,7 @@
             <tr>
               <td>Herdr API schema</td>
               <td><code>crates/herdr-types/schemas/herdr-api.schema.json</code></td>
-              <td>protocol 16 · Herdr 0.7.2-preview · from <code>herdr api schema --json</code></td>
+              <td>protocol 16 · Herdr 0.7.2-preview.2026-07-07-f5354780e4ef · from <code>herdr api schema --json</code></td>
             </tr>
             <tr>
               <td>Cargo workspace</td>
@@ -931,7 +937,7 @@
             <tr><td><code>acex-editor</code></td><td>EditorBridge + Zed open/diff/new/add-window</td><td><span class="st st-done">done</span> Zed bridge</td></tr>
             <tr><td><code>acex-config</code></td><td>env + defaults: socket/session/spawn/editor/peek</td><td><span class="st st-done">done</span> env baseline</td></tr>
             <tr><td><code>acex-discover</code></td><td>pure package + skill discovery</td><td><span class="st st-done">done</span> status/smoke JSON</td></tr>
-            <tr><td><code>acex</code> (bin)</td><td>Compose loop, discovery, CLI, worker</td><td><span class="st st-doing">doing</span> G1 polish</td></tr>
+            <tr><td><code>acex</code> (bin)</td><td>Compose loop, discovery, CLI, worker</td><td><span class="st st-done">done</span> G1; G1.5 active</td></tr>
           </tbody>
         </table>
       </div>
@@ -1032,6 +1038,7 @@
               <tr><td>15</td><td>Ledger role</td><td>Append-only historical evidence; not live planning authority</td></tr>
               <tr><td>16</td><td>Continuation automation</td><td>PR-shaped; no CODEOWNERS bypass; wait foreground for merge</td></tr>
               <tr><td>17</td><td>Checkpoint DoD</td><td>PR opened + required CI green; merge when protection permits</td></tr>
+              <tr><td>18</td><td>F30 observability scope</td><td>counts/events/waits shipped; richer ages deferred to G2 polish if needed</td></tr>
 
 
             </tbody>
@@ -1045,18 +1052,19 @@
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
+        <li><strong>2026-07-15</strong> — Audited docs for freshness: active phase G1.5, full Herdr version, 46-test baseline, tracker footer/KPI, and biography status claims now align with live checkpoint facts.</li>
         <li><strong>2026-07-15</strong> — Added PR-shaped OMP continuation loop, shared PR verify helper, verify CI, and branch-protection docs requiring <code>verify / hygiene</code>.</li>
         <li><strong>2026-07-15</strong> — F33 shipped explicit attach target variants with validated agent/session command plans and env-isolated Herdr handoffs.</li>
 
         <li><strong>2026-07-14</strong> — F32 shipped deterministic wait timeout UX with pure expiry reducer, visible expired badges, and event-before-timeout ordering tests.</li>
         <li><strong>2026-07-14</strong> — F31 shipped config-backed start presets with config.toml loading, preset selectors in the start prompt, and status/checkpoint JSON output.</li>
         <li><strong>2026-07-14</strong> — Hardened stateless continuation: checkpoint capsule, F31–F33 next-ready rows, fail-closed ledger validator, CI/CODEOWNERS/protection docs, discovery diagnostics, and <code>--checkpoint-status</code>.</li>
-        <li><strong>2026-07-14</strong> — Docs reality refresh: 8 crates, G1 usable core, 29-test baseline, protocol 16 / Herdr 0.7.2-preview, packages=1 skills=1.</li>
+        <li><strong>2026-07-14</strong> — Docs reality refresh: 8 crates, G1 usable core, current 46-test baseline, protocol 16 / Herdr 0.7.2-preview.2026-07-07-f5354780e4ef, packages=1 skills=1.</li>
         <li><strong>2026-07-14</strong> — Added append-only JSONL checkpoint ledger at <code>docs/checkpoint-ledger.jsonl</code>.</li>
         <li><strong>2026-07-14</strong> — Added stateless continuation checkpoint contract for fresh agent sessions.</li>
         <li><strong>2026-07-13</strong> — Pi alignment: PHILOSOPHY_PI.md, acex-discover, --status JSON, example package, skill discovery (no TS loaders).</li>
         <li><strong>2026-07-13</strong> — Production-ready pass: agent doc graph, biographies, acex-dev skill, fmt/clippy gates, poison-safe locks, expanded shipped-function tests.</li>
-        <li><strong>2026-07-13</strong> — Phase 1 core: board/filters/palette/focus/peek/send/start/wait/zed/attach/worktrees. G1 polish remains.</li>
+        <li><strong>2026-07-13</strong> — Phase 1 core: board/filters/palette/focus/peek/send/start/wait/zed/attach/worktrees. Later G1 polish completed; current active phase is G1.5 recommended.</li>
         <li><strong>2026-07-13</strong> — F04 complete + G0 closed. <code>--smoke-reconnect</code>.</li>
         <li><strong>2026-07-13</strong> — F03: EventSubscription, model reducers, live TUI loop, live E2E subscribe.</li>
         <li><strong>2026-07-13</strong> — Windows named-pipe transport + Unix UDS; connect/ping/snapshot in binary; <code>--smoke</code>; live E2E. F01/F02/F05/F22/F23 done.</li>
@@ -1111,8 +1119,8 @@
     <footer>
       <div class="fight-bar" aria-label="Ship status">
         <span>PHASE 0 ✓</span>
-        <span class="active">* SHIP · G1</span>
-        <span>SHIP+ · G1.5</span>
+        <span>SHIP · G1 ✓</span>
+        <span class="active">* SHIP+ · G1.5</span>
         <span>POST · G2</span>
       </div>
       <p class="foot-note">

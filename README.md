@@ -35,7 +35,7 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 
 ## Status
 
-Phase **0 / G0 complete**. Phase **1 / G1 usable core** is in place: board, filters, palette, focus, peek, send, start, wait, Zed open, attach, worktree list, reconnect/resnapshot. Current next-ready work comes from the checkpoint capsule in `docs/tracker.html`; use `cargo run -p acex -- --checkpoint-status` for the machine-readable continuation oracle.
+Gates **G0** and **G1** are complete/usable: board, filters, palette, focus, peek, send, start, wait, Zed open, attach, worktree list, reconnect/resnapshot. Current active phase is **G1.5 recommended**; next-ready work comes from the checkpoint capsule in `docs/tracker.html` and is machine-readable via `cargo run -p acex -- --checkpoint-status`.
 
 ```bash
 start docs/tracker.html   # Windows
@@ -73,7 +73,7 @@ cargo run -p acex -- --smoke            # Live or actionable offline + discovery
 cargo run -p acex -- --smoke-reconnect  # F04 reconnect path; may mutate local Herdr server
 cargo run -p acex                       # TUI (q quit)
 ```
-Observed Herdr schema/protocol: protocol 16, Herdr 0.7.2-preview (2026-07-14); `herdr-types` schema artifact is protocol 16. Current discovery and continuation state are machine-readable via `--status` and `--checkpoint-status`.
+Observed Herdr schema/protocol: protocol 16, Herdr `0.7.2-preview.2026-07-07-f5354780e4ef` (observed 2026-07-15); `herdr-types` schema artifact is protocol 16. Current discovery and continuation state are machine-readable via `--status` and `--checkpoint-status`.
 
 
 **Drop-in package dirs:** `.acex/packages/*/acex-package.toml`, `packages/*/acex-package.toml`, `skills/*/SKILL.md`.
