@@ -196,7 +196,7 @@
         <span class="chip mute">G1 = MVP ship</span>
         <span class="chip mute">No calendar estimates</span>
       </div>
-      <p class="updated">Last updated · 2026-07-14 · stateless continuation checkpoint</p>
+      <p class="updated">Last updated · 2026-07-14 · append-only checkpoint ledger</p>
     </header>
 
     <nav class="menu" aria-label="Sections">
@@ -244,8 +244,8 @@
       <ul>
         <li class="dim">Prompt: “continue from the last checkpoint.”</li>
         <li class="dim">Read order: SOUL → GOAL → tracker Now/Open blockers/latest Comment → AGENTS.</li>
-        <li class="dim">Durable state is this tracker: Now, feature matrix, top Comment, Changelog, Artifacts. Chat is not memory.</li>
-        <li class="dim">Default next move: pick the first active/doing or unblocked todo item under the active phase, then update this tracker before yielding.</li>
+        <li class="dim">Durable state is this tracker plus <code>docs/checkpoint-ledger.jsonl</code>: tracker Now/feature matrix/top Comment for live state; JSONL ledger tail for append-only history.</li>
+        <li class="dim">Default next move: pick the first active/doing or unblocked todo item under the active phase, then update tracker and append a JSONL ledger entry before yielding.</li>
       </ul>
     </section>
 
@@ -538,6 +538,8 @@
           Added explicit continuation contract: a fresh agent told “continue from the last checkpoint” should use
           tracker Now/Open blockers/latest Comment/feature matrix as durable state, not chat history. Default next work
           remains G1 polish: start presets, wait timeout UX, attach variants, then G1.5 items.
+          JSONL checkpoint ledger added at <code>docs/checkpoint-ledger.jsonl</code>; future meaningful changes should update
+          tracker live state and append a ledger entry so history is robust against mutable tracker sections. File format alone does not guarantee append-only; prefix checks/CI must enforce it.
         </p>
       </div>
 
@@ -841,6 +843,7 @@
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
         <li><strong>2026-07-14</strong> — Docs reality refresh: 8 crates, G1 usable core, 29-test baseline, protocol 16 / Herdr 0.7.2-preview, packages=1 skills=1.</li>
+        <li><strong>2026-07-14</strong> — Added append-only JSONL checkpoint ledger at <code>docs/checkpoint-ledger.jsonl</code>.</li>
         <li><strong>2026-07-14</strong> — Added stateless continuation checkpoint contract for fresh agent sessions.</li>
         <li><strong>2026-07-13</strong> — Pi alignment: PHILOSOPHY_PI.md, acex-discover, --status JSON, example package, skill discovery (no TS loaders).</li>
         <li><strong>2026-07-13</strong> — Production-ready pass: agent doc graph, biographies, acex-dev skill, fmt/clippy gates, poison-safe locks, expanded shipped-function tests.</li>
@@ -887,6 +890,7 @@
       <ol>
         <li>Change status badges on features/crates/phases.</li>
         <li>Prepend a <strong>Comment</strong> with date · topic · actor.</li>
+        <li>Append <strong>checkpoint-ledger.jsonl</strong> entry for checkpoint/process facts; never rewrite old ledger entries.</li>
         <li>Add <strong>Artifacts</strong> rows for new durable files.</li>
         <li>Append <strong>Changelog</strong> line.</li>
         <li>Bump “Last updated” in the hero.</li>

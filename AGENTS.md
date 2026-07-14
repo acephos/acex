@@ -29,10 +29,11 @@ Chat history is **not** project memory.
 If the operator says “continue from the last checkpoint,” do **not** rely on chat history. Treat this repo as the checkpoint:
 
 1. Read `SOUL.md`, `GOAL.md`, `docs/tracker.html` → Now/Open blockers/latest Comment, then this file.
-2. Treat `docs/tracker.html` Now + Open blockers + latest Comment + feature matrix as the current state.
-3. If no explicit task is given, pick the first tracker item that is `doing` or an unblocked `todo` under the active phase.
-4. Run `cargo run -p acex -- --status` before coding when the task depends on current Herdr/discovery reality.
-5. When done, update tracker status/comment/changelog/Last updated so the next stateless agent can resume with no chat context.
+2. Read the tail of `docs/checkpoint-ledger.jsonl` for append-only checkpoint history.
+3. Treat tracker Now + Open blockers + latest Comment + feature matrix as current state; use the ledger for historical facts.
+4. If no explicit task is given, pick the first tracker item that is `doing` or an unblocked `todo` under the active phase.
+5. Run `cargo run -p acex -- --status` before coding when the task depends on current Herdr/discovery reality.
+6. When done, update tracker status/comment/changelog/Last updated and append a ledger entry so the next stateless agent can resume with no chat context.
 
 
 ---
@@ -44,6 +45,7 @@ If the operator says “continue from the last checkpoint,” do **not** rely on
 | `SOUL.md` | Identity, pillars, hard refusals |
 | `GOAL.md` | North star, ship gates, metrics |
 | `docs/tracker.html` | **Sole tracker** — features, phases, comments, artifacts, decisions |
+| `docs/checkpoint-ledger.jsonl` | **Append-only JSONL ledger** — durable checkpoint/audit trail |
 | `AGENTS.md` | This file — how *you* work here |
 | `README.md` | Human onboarding |
 | `docs/ARCHITECTURE.md` | Crate ownership + data flow |
@@ -128,7 +130,7 @@ Observed 2026-07-14: Herdr protocol 16 / 0.7.2-preview; schema artifact lives at
 2. **Pick** — one feature ID (Fxx) or explicit tracker task; respect deps.  
 3. **Implement** — smallest vertical slice; keep crates pure to their ownership.  
 4. **Verify** — see [docs/VERIFY.md](./docs/VERIFY.md).  
-5. **Record** — tracker status + comment + changelog.  
+5. **Record** — tracker status + comment + changelog + checkpoint ledger entry.
 6. **Breadcrumbs** — philosophy shifts edit SOUL/GOAL explicitly.
 
 ### Tracker status vocabulary

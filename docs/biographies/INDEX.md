@@ -11,6 +11,9 @@ Current workspace: 8 crates; `docs/tracker.html` is the sole planning truth.
 | Project goals | [GOAL.md](./GOAL.md) |
 | Agent ops manual | [AGENTS.md](./AGENTS.md) |
 | Living tracker | [tracker.md](./tracker.md) |
+| Checkpoint ledger | [checkpoint-ledger.md](./checkpoint-ledger.md) |
+| Ledger validator | [ledger-validator.md](./ledger-validator.md) |
+| Ledger CI | [ledger-ci.md](./ledger-ci.md) |
 | Architecture | [../ARCHITECTURE.md](../ARCHITECTURE.md) (self-bio) |
 | Extension contract | [../EXTENDING.md](../EXTENDING.md) (self-bio) |
 | Verify gates | [../VERIFY.md](../VERIFY.md) (self-bio) |

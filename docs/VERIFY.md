@@ -21,8 +21,9 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status
 cargo run -p acex -- --smoke
+python scripts/check-ledger-append-only.py origin/master
 ```
-`--status` is included because it is the machine-readable discovery/connection contract used by agents and docs.
+`--status` is included because it is the machine-readable discovery/connection contract used by agents and docs. The ledger check validates JSONL shape, hash chain, and append-only prefix preservation when a base ref exists.
 
 ### Current observed baseline (2026-07-14)
 
@@ -70,6 +71,7 @@ This check deliberately exercises F04 by stopping/respawning a local Herdr serve
 | `clippy -D warnings` | Footguns, dead code, needless clones |
 | `test --workspace` | Pure reducers, resolve, mock RPC, discovery fixtures |
 | `--status` | `acex-discover` package/skill scan and machine-readable status contract |
+| `check-ledger-append-only.py` | JSONL checkpoint ledger shape, hash chain, and append-only prefix |
 | `--smoke` | Binary entry + connect path |
 
 ---
@@ -77,7 +79,7 @@ This check deliberately exercises F04 by stopping/respawning a local Herdr serve
 ## Agent definition of done
 
 1. Gates above green (or smoke/status offline-honest where Herdr is intentionally unavailable).  
-2. `docs/tracker.html` updated if intent/scope/status changed; tracker is the sole planning truth.
+2. `docs/tracker.html` updated if intent/scope/status changed; tracker is the sole planning truth. Append durable checkpoint/process facts to `docs/checkpoint-ledger.jsonl`.
 3. No SOUL ownership violations.  
 4. New pure logic has a unit test calling **shipped** functions.
 

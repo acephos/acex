@@ -6,6 +6,9 @@ Durable outputs referenced by `docs/tracker.html` and biographies.
 |----------|----------|-----------|
 | Herdr API schema | `crates/herdr-types/schemas/herdr-api.schema.json` | [biographies/schema.md](../biographies/schema.md) |
 | Living tracker | `docs/tracker.html` | [biographies/tracker.md](../biographies/tracker.md) |
+| Checkpoint ledger | `docs/checkpoint-ledger.jsonl` | [biographies/checkpoint-ledger.md](../biographies/checkpoint-ledger.md) |
+| Ledger append-only validator | `scripts/check-ledger-append-only.py` | [biographies/ledger-validator.md](../biographies/ledger-validator.md) |
+| Ledger CI | `.github/workflows/ledger.yml` | [biographies/ledger-ci.md](../biographies/ledger-ci.md) |
 | Architecture | `docs/ARCHITECTURE.md` | self |
 | Extension guide | `docs/EXTENDING.md` | self |
 | Verify gates | `docs/VERIFY.md` | self |

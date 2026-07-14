@@ -18,7 +18,7 @@ description: Develop and maintain the acex Herdr control-plane (SOUL/GOAL/tracke
 
 Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 
-**Continuation prompt:** “continue from the last checkpoint” means read tracker Now/Open blockers/latest Comment and the feature matrix, then proceed without chat history.
+**Continuation prompt:** “continue from the last checkpoint” means read tracker Now/Open blockers/latest Comment, the feature matrix, and the tail of `docs/checkpoint-ledger.jsonl`, then proceed without chat history.
 
 ## Ownership (never violate)
 
@@ -36,7 +36,7 @@ Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 1. **Discover** — `cargo run -p acex -- --status` (packages + skills JSON).  
 2. **Drop-in metadata** — `.acex/packages/<id>/acex-package.toml` or `packages/<id>/`.  
 3. **Code hooks** — Intent → palette → worker (Recipe A in EXTENDING).  
-4. **Record** — tracker comment + changelog.
+4. **Record** — tracker comment + changelog + `docs/checkpoint-ledger.jsonl` entry.
 
 ## How to add a coded action (summary)
 
@@ -60,5 +60,6 @@ cargo run -p acex -- --smoke
 Use `--status` for machine-readable conn/packages/skills; use `--smoke` for the binary connect path. Observed 2026-07-14: workspace tests 29 passed, live status/smoke and offline status OK, current discovery packages=1 skills=1.
 
 ## Tracker discipline
+Durable checkpoint facts go in `docs/checkpoint-ledger.jsonl` as append-only JSONL entries; corrections are new entries, not edits to history. File format alone does not guarantee append-only; run `python scripts/check-ledger-append-only.py <base-ref>` when ledger history changes.
 
 Chat is ephemeral. Same change that alters product intent **must** update `docs/tracker.html`.

@@ -21,6 +21,7 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 | [GOAL.md](./GOAL.md) | North star, ship gates, metrics |
 | [AGENTS.md](./AGENTS.md) | **Agent entry** — how to work in this repo |
 | [docs/tracker.html](./docs/tracker.html) | **Sole living project tracker** |
+| [docs/checkpoint-ledger.jsonl](./docs/checkpoint-ledger.jsonl) | Append-only JSONL checkpoint/audit ledger |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Crate ownership + data flow |
 | [docs/EXTENDING.md](./docs/EXTENDING.md) | How to add actions / transports / editors |
 | [docs/VERIFY.md](./docs/VERIFY.md) | Production hygiene gates |
@@ -28,7 +29,7 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 | [docs/biographies/INDEX.md](./docs/biographies/INDEX.md) | Artifact lineage (biographies) |
 | [skills/acex-dev/SKILL.md](./skills/acex-dev/SKILL.md) | Project skill for drop-in agents |
 
-**Continue from last checkpoint:** open the repo in a new agent session and ask it to “continue from the last checkpoint.” The agent should read `AGENTS.md` and `docs/tracker.html`; tracker Now/Open blockers/latest Comment are the durable checkpoint, not chat history.
+**Continue from last checkpoint:** open the repo in a new agent session and ask it to “continue from the last checkpoint.” The agent should read `AGENTS.md`, `docs/tracker.html`, and the tail of `docs/checkpoint-ledger.jsonl`; tracker Now/Open blockers/latest Comment are the live checkpoint, while the JSONL ledger is the append-only audit trail.
 
 **Pillars:** Extensibility · Platform-agnostic core · Performance under agentic load · Interpretable observability.
 
