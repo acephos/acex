@@ -163,13 +163,19 @@ Observed 2026-07-14: Herdr protocol 16 / 0.7.2-preview; schema artifact lives at
 ### Commands (production hygiene)
 
 ```bash
+scripts/verify-pr.sh --base-ref origin/master
+
+# expanded gates:
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status
 cargo run -p acex -- --checkpoint-status
 cargo run -p acex -- --smoke
+python scripts/check-ledger-append-only.py origin/master
 ```
+
+For foreground PR-shaped continuation, use `scripts/omp-pr-loop.ps1` or `scripts/omp-pr-loop.sh`; the loop opens one PR, waits for CODEOWNERS review/CI/merge, then starts a fresh OMP session for the next checkpoint.
 Use the tracker checkpoint capsule and latest ledger entry for dated proof; do not let this command list become a competing planning baseline.
 
 

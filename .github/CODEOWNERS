@@ -1,5 +1,10 @@
 /docs/checkpoint-ledger.jsonl @acephos
 /scripts/check-ledger-append-only.py @acephos
 /.github/workflows/ledger.yml @acephos
+/.github/workflows/verify.yml @acephos
+/.github/CODEOWNERS @acephos
+/scripts/verify-pr.sh @acephos
+/scripts/omp-pr-loop.sh @acephos
+/scripts/omp-pr-loop.ps1 @acephos
 /docs/tracker.html @acephos
 /AGENTS.md @acephos

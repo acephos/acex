@@ -223,12 +223,12 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f33-attach-targets",
+  "latest_comment_id": "2026-07-15-omp-pr-loop",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "92e6db4c25a466e7da9d3df849994132b36fca82cb3d2b76932b071404db9af7",
-    "entry_count": 5
+    "latest_hash": "d0ccbffe7b36287fa759910ad9d320c696c201ae6caff32ac1f2e39dd671e317",
+    "entry_count": 6
   },
   "next_ready": [
     {
@@ -649,6 +649,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-omp-pr-loop">
+        <div class="meta"><span class="tag">2026-07-15</span> · OMP PR continuation loop · agent</div>
+        <p style="margin:0">
+          Added PR-shaped continuation automation: <code>scripts/omp-pr-loop.ps1</code> / <code>.sh</code> run fresh foreground <code>omp --profile &lt;name&gt; --no-session -p "continue from the last checkpoint"</code> iterations, validate locally with live smoke, open a GitHub PR, watch checks, and then wait for CODEOWNERS review/merge before continuing. Added <code>scripts/verify-pr.sh</code> plus <code>verify / hygiene</code> CI; hosted CI uses offline smoke because GitHub runners do not have Herdr, while the local PR loop keeps the stronger live smoke gate. The ledger workflow now falls back to the default branch on force-pushed branch events whose previous tip is no longer fetchable.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-f33-attach-targets">
         <div class="meta"><span class="tag">2026-07-15</span> · F33 attach targets · agent</div>
         <p style="margin:0">
@@ -823,7 +830,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>ff1596ad...</code></td>
+              <td>append-only hash-chain history; latest hash <code>d0ccbffe...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -844,6 +851,17 @@
               <td>Ledger CI / protection</td>
               <td><code>.github/workflows/ledger.yml</code> · <code>.github/CODEOWNERS</code> · <code>docs/REPO_PROTECTION.md</code></td>
               <td>inline prefix check, owner review paths, required branch settings</td>
+            </tr>
+
+            <tr>
+              <td>PR verification</td>
+              <td><code>scripts/verify-pr.sh</code> · <code>.github/workflows/verify.yml</code></td>
+              <td>local live gates; CI uses offline smoke because hosted runners lack Herdr</td>
+            </tr>
+            <tr>
+              <td>OMP PR loop</td>
+              <td><code>scripts/omp-pr-loop.ps1</code> · <code>scripts/omp-pr-loop.sh</code></td>
+              <td>fresh foreground OMP session per PR; waits for CODEOWNERS review/merge</td>
             </tr>
 
             <tr>
@@ -1004,6 +1022,8 @@
               <tr><td>13</td><td>Unary RPC</td><td>Connect-per-call; subscribe uses separate long-lived stream</td></tr>
               <tr><td>14</td><td>Continuation selector</td><td>Tracker <code>acex-checkpoint</code> capsule wins live planning</td></tr>
               <tr><td>15</td><td>Ledger role</td><td>Append-only historical evidence; not live planning authority</td></tr>
+              <tr><td>16</td><td>Continuation automation</td><td>PR-shaped; no CODEOWNERS bypass; wait foreground for merge</td></tr>
+
 
             </tbody>
           </table>
@@ -1015,6 +1035,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — Added PR-shaped OMP continuation loop, shared PR verify helper, verify CI, and branch-protection docs requiring <code>verify / hygiene</code>.</li>
         <li><strong>2026-07-15</strong> — F33 shipped explicit attach target variants with validated agent/session command plans and env-isolated Herdr handoffs.</li>
 
         <li><strong>2026-07-14</strong> — F32 shipped deterministic wait timeout UX with pure expiry reducer, visible expired badges, and event-before-timeout ordering tests.</li>

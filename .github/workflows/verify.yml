@@ -1,0 +1,24 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Script syntax
+        shell: bash
+        run: |
+          bash -n scripts/verify-pr.sh
+          bash -n scripts/omp-pr-loop.sh
+          pwsh -NoProfile -Command '[scriptblock]::Create((Get-Content -Raw scripts/omp-pr-loop.ps1)) | Out-Null'
+      - name: Verify PR gates
+        shell: bash
+        run: |
+          scripts/verify-pr.sh --offline-smoke
