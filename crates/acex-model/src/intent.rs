@@ -1,6 +1,23 @@
 //! UI → runtime intents (Phase 1 control plane).
 
 use herdr_types::AgentState;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StartPreset {
+    pub id: String,
+    pub name: String,
+    pub argv: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AttachTarget {
+    SelectedAgent,
+    Agent(String),
+    Session,
+}
 
 /// Commands raised by the UI; executed on the async Herdr worker.
 #[derive(Debug, Clone)]
@@ -28,8 +45,9 @@ pub enum Intent {
         old: String,
         new: String,
     },
-    AttachSelected,
-    AttachSession,
+    Attach {
+        target: AttachTarget,
+    },
     WorktreeList,
     Resnapshot,
     Notify {

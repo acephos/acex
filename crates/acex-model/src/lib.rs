@@ -5,9 +5,11 @@
 mod intent;
 
 pub use herdr_types::{AgentState, AgentSummary, Event, SessionSnapshot};
-pub use intent::{Intent, ZedOpenMode};
+pub use intent::{AttachTarget, Intent, StartPreset, ZedOpenMode};
 
 use serde_json::Value;
+
+pub const DEFAULT_WAIT_TIMEOUT_MS: u64 = 30_000;
 
 /// Connection health for the status badge.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -74,6 +76,8 @@ pub struct WaitBadge {
     pub want: AgentState,
     pub armed: bool,
     pub resolved: bool,
+    pub expired: bool,
+    pub expires_at_ms: Option<u64>,
     pub message: String,
 }
 
@@ -443,6 +447,10 @@ impl Store {
     }
 
     pub fn arm_wait(&mut self, target: String, want: AgentState) {
+        self.arm_wait_at(target, want, 0, DEFAULT_WAIT_TIMEOUT_MS);
+    }
+
+    pub fn arm_wait_at(&mut self, target: String, want: AgentState, now_ms: u64, timeout_ms: u64) {
         // Resolve immediately if already satisfied.
         let current = self
             .agents
@@ -450,27 +458,49 @@ impl Store {
             .find(|a| a.pane_id.as_deref() == Some(target.as_str()) || a.id == target)
             .map(|a| a.state);
         let resolved = current == Some(want);
+        let expires_at_ms = (!resolved).then_some(now_ms.saturating_add(timeout_ms));
         self.waits.retain(|w| w.target != target);
         self.waits.push(WaitBadge {
             message: if resolved {
                 format!("{target} already {want}", want = want.as_str())
             } else {
-                format!("waiting {target} → {}", want.as_str())
+                format!(
+                    "waiting {target} → {want} · expires in {secs}s",
+                    want = want.as_str(),
+                    secs = timeout_ms / 1_000
+                )
             },
             target,
             want,
             armed: !resolved,
             resolved,
+            expired: false,
+            expires_at_ms,
         });
         if resolved {
             self.set_toast("wait already satisfied");
         }
     }
 
+    pub fn expire_waits(&mut self, now_ms: u64) {
+        for w in &mut self.waits {
+            if w.armed
+                && !w.resolved
+                && !w.expired
+                && w.expires_at_ms.is_some_and(|expires| now_ms >= expires)
+            {
+                w.armed = false;
+                w.expired = true;
+                w.message = format!("wait expired · {} not {}", w.target, w.want.as_str());
+                self.toast = Some(w.message.clone());
+            }
+        }
+    }
+
     /// Called from event reduce when agent status changes.
     fn resolve_waits_for(&mut self, target: &str, state: AgentState) {
         for w in &mut self.waits {
-            if w.armed && !w.resolved && w.target == target && w.want == state {
+            if w.armed && !w.resolved && !w.expired && w.target == target && w.want == state {
                 w.resolved = true;
                 w.armed = false;
                 w.message = format!("wait ok · {target} is {}", state.as_str());
@@ -736,14 +766,63 @@ mod tests {
             }],
             ..Default::default()
         };
-        s.arm_wait("w1:p1".into(), AgentState::Done);
-        assert!(s.waits.iter().any(|w| w.armed && !w.resolved));
+        s.arm_wait_at("w1:p1".into(), AgentState::Done, 0, DEFAULT_WAIT_TIMEOUT_MS);
+        assert!(s.waits.iter().any(|w| w.armed && !w.resolved && !w.expired));
         s.apply_event(&Event {
             event: "pane_agent_status_changed".into(),
             data: json!({"pane_id":"w1:p1","agent_status":"done"}),
             extra: Default::default(),
         });
-        assert!(s.waits.iter().any(|w| w.resolved && !w.armed));
+        assert!(s.waits.iter().any(|w| w.resolved && !w.armed && !w.expired));
+        assert_eq!(s.agents[0].state, AgentState::Done);
+    }
+
+    #[test]
+    fn wait_timeout_before_event_stays_expired() {
+        let mut s = Store {
+            agents: vec![AgentSummary {
+                id: "w1:p1".into(),
+                pane_id: Some("w1:p1".into()),
+                state: AgentState::Working,
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        s.arm_wait_at("w1:p1".into(), AgentState::Done, 100, 50);
+
+        s.expire_waits(151);
+
+        assert!(s.waits.iter().any(|w| w.expired && !w.armed && !w.resolved));
+        s.apply_event(&Event {
+            event: "pane_agent_status_changed".into(),
+            data: json!({"pane_id":"w1:p1","agent_status":"done"}),
+            extra: Default::default(),
+        });
+        assert!(s.waits.iter().any(|w| w.expired && !w.resolved));
+        assert_eq!(s.agents[0].state, AgentState::Done);
+    }
+
+    #[test]
+    fn wait_event_before_timeout_stays_resolved() {
+        let mut s = Store {
+            agents: vec![AgentSummary {
+                id: "w1:p1".into(),
+                pane_id: Some("w1:p1".into()),
+                state: AgentState::Working,
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        s.arm_wait_at("w1:p1".into(), AgentState::Done, 100, 50);
+
+        s.apply_event(&Event {
+            event: "pane_agent_status_changed".into(),
+            data: json!({"pane_id":"w1:p1","agent_status":"done"}),
+            extra: Default::default(),
+        });
+        s.expire_waits(151);
+
+        assert!(s.waits.iter().any(|w| w.resolved && !w.armed && !w.expired));
         assert_eq!(s.agents[0].state, AgentState::Done);
     }
 

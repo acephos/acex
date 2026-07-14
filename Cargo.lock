@@ -27,9 +27,12 @@ dependencies = [
 name = "acex-config"
 version = "0.1.0"
 dependencies = [
+ "acex-model",
  "dirs",
  "serde",
  "serde_json",
+ "tempfile",
+ "toml",
 ]
 
 [[package]]

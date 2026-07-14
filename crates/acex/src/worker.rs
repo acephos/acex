@@ -1,15 +1,16 @@
 //! Async intent worker — Herdr RPC + editor/attach side effects.
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use acex_editor::{EditorBridge, OpenMode, ZedBridge};
-use acex_model::{Intent, Store, ZedOpenMode};
+use acex_model::{AttachTarget, Intent, Store, ZedOpenMode, DEFAULT_WAIT_TIMEOUT_MS};
 use herdr_client::{
-    connect_with_optional_spawn, extract_agent_rows, extract_read_text, resync_with_backoff,
-    SocketTarget,
+    connect_with_optional_spawn, extract_agent_rows, extract_read_text,
+    resolve::session_socket_path, resync_with_backoff, SocketTarget,
 };
 use tracing::{info, warn};
 
@@ -118,7 +119,7 @@ async fn handle_intent(
         Intent::WaitSelected { status } => {
             let t = selected_target(store)?;
             let mut s = lock_store(store.as_ref());
-            s.arm_wait(t, status);
+            s.arm_wait_at(t, status, now_ms(), DEFAULT_WAIT_TIMEOUT_MS);
         }
         Intent::OpenZed { path, mode } => {
             let path = resolve_open_path(store, path)?;
@@ -137,16 +138,16 @@ async fn handle_intent(
             let mut s = lock_store(store.as_ref());
             s.set_toast("zed --diff");
         }
-        Intent::AttachSelected => {
-            let t = selected_target(store)?;
-            spawn_herdr_attach(Some(&t))?;
+        Intent::Attach { target: attach } => {
+            let attach = match attach {
+                AttachTarget::SelectedAgent => AttachTarget::Agent(selected_target(store)?),
+                other => other,
+            };
+            let plan = build_herdr_attach_plan(target, &attach)?;
+            spawn_herdr_attach(&plan)?;
             let mut s = lock_store(store.as_ref());
-            s.set_toast(format!("attach {t}"));
-        }
-        Intent::AttachSession => {
-            spawn_herdr_attach(None)?;
-            let mut s = lock_store(store.as_ref());
-            s.set_toast("herdr attach session");
+            s.set_toast(attach_toast(&attach));
+            s.last_error = None;
         }
         Intent::WorktreeList => {
             let mut client = connect_with_optional_spawn(target, spawn).await?;
@@ -225,14 +226,99 @@ fn resolve_open_path(store: &Arc<Mutex<Store>>, path: Option<String>) -> anyhow:
     Ok(std::env::current_dir()?)
 }
 
-fn spawn_herdr_attach(target: Option<&str>) -> anyhow::Result<()> {
-    let mut cmd = std::process::Command::new("herdr");
-    if let Some(t) = target {
-        cmd.args(["agent", "attach", t]);
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AttachCommandPlan {
+    program: &'static str,
+    args: Vec<String>,
+    env: Vec<(&'static str, OsString)>,
+}
+
+fn build_herdr_attach_plan(
+    socket_target: &SocketTarget,
+    attach_target: &AttachTarget,
+) -> anyhow::Result<AttachCommandPlan> {
+    let mut plan = AttachCommandPlan {
+        program: "herdr",
+        args: Vec::new(),
+        env: socket_env(socket_target)?,
+    };
+
+    match attach_target {
+        AttachTarget::SelectedAgent => {
+            anyhow::bail!("selected agent attach target must be resolved before spawning herdr")
+        }
+        AttachTarget::Agent(target) => {
+            let target = non_blank(target, "agent attach target")?;
+            plan.args.extend(["agent".into(), "attach".into(), target]);
+        }
+        AttachTarget::Session => {
+            if let SocketTarget::Session(name) = socket_target {
+                let name = non_blank(name, "session attach target")?;
+                plan.args.extend(["session".into(), "attach".into(), name]);
+            }
+        }
+    }
+
+    Ok(plan)
+}
+
+fn socket_env(target: &SocketTarget) -> anyhow::Result<Vec<(&'static str, OsString)>> {
+    let mut env = Vec::with_capacity(2);
+    match target {
+        SocketTarget::Path(path) => env.push(("HERDR_SOCKET_PATH", path.as_os_str().to_owned())),
+        SocketTarget::Session(name) => {
+            let name = non_blank(name, "session attach target")?;
+            env.push((
+                "HERDR_SOCKET_PATH",
+                session_socket_path(&name).into_os_string(),
+            ));
+            env.push(("HERDR_SESSION", OsString::from(name)));
+        }
+        SocketTarget::Default => {
+            if let Some(path) = target.path_hint() {
+                env.push(("HERDR_SOCKET_PATH", path.into_os_string()));
+            }
+        }
+    }
+    Ok(env)
+}
+
+fn non_blank(value: &str, label: &str) -> anyhow::Result<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        anyhow::bail!("{label} is blank")
+    }
+    Ok(trimmed.to_string())
+}
+
+fn attach_toast(target: &AttachTarget) -> String {
+    match target {
+        AttachTarget::SelectedAgent => "attach selected".into(),
+        AttachTarget::Agent(agent) => format!("attach {agent}"),
+        AttachTarget::Session => "attach session".into(),
+    }
+}
+
+fn spawn_herdr_attach(plan: &AttachCommandPlan) -> anyhow::Result<()> {
+    let mut cmd = std::process::Command::new(plan.program);
+    cmd.args(&plan.args);
+    cmd.env_remove("HERDR_SOCKET_PATH");
+    cmd.env_remove("HERDR_SESSION");
+    for (key, value) in &plan.env {
+        cmd.env(key, value);
     }
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
+        const DETACHED_PROCESS: u32 = 0x00000008;
+        cmd.creation_flags(CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
+    }
+
     match cmd.spawn() {
         Ok(_) => Ok(()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -260,4 +346,86 @@ fn format_worktrees(result: &serde_json::Value) -> Vec<String> {
             format!("{branch}  {path}")
         })
         .collect()
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis().min(u128::from(u64::MAX)) as u64)
+        .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn env_value<'a>(plan: &'a AttachCommandPlan, key: &str) -> Option<&'a OsString> {
+        plan.env.iter().find_map(|(k, v)| (*k == key).then_some(v))
+    }
+
+    #[test]
+    fn agent_attach_uses_explicit_target_and_socket_env() {
+        let socket = SocketTarget::Path(PathBuf::from("/tmp/herdr.sock"));
+        let plan = build_herdr_attach_plan(&socket, &AttachTarget::Agent("agent-1".into()))
+            .expect("agent attach plan");
+
+        assert_eq!(plan.program, "herdr");
+        assert_eq!(plan.args, ["agent", "attach", "agent-1"]);
+        assert_eq!(
+            env_value(&plan, "HERDR_SOCKET_PATH"),
+            Some(&OsString::from("/tmp/herdr.sock"))
+        );
+        assert_eq!(env_value(&plan, "HERDR_SESSION"), None);
+    }
+
+    #[test]
+    fn named_session_attach_uses_explicit_session_command_and_env() {
+        let socket = SocketTarget::Session("review".into());
+        let plan =
+            build_herdr_attach_plan(&socket, &AttachTarget::Session).expect("session attach plan");
+
+        assert_eq!(plan.args, ["session", "attach", "review"]);
+        assert_eq!(
+            env_value(&plan, "HERDR_SESSION"),
+            Some(&OsString::from("review"))
+        );
+        assert!(env_value(&plan, "HERDR_SOCKET_PATH").is_some());
+    }
+
+    #[test]
+    fn default_session_attach_falls_back_to_bare_herdr_with_socket_env() {
+        let plan = build_herdr_attach_plan(&SocketTarget::Default, &AttachTarget::Session)
+            .expect("default session attach plan");
+
+        assert!(plan.args.is_empty());
+        assert!(env_value(&plan, "HERDR_SOCKET_PATH").is_some());
+        assert_eq!(env_value(&plan, "HERDR_SESSION"), None);
+    }
+
+    #[test]
+    fn blank_agent_attach_target_is_rejected() {
+        let err =
+            build_herdr_attach_plan(&SocketTarget::Default, &AttachTarget::Agent("  ".into()))
+                .expect_err("blank agent should fail");
+
+        assert!(err.to_string().contains("agent attach target is blank"));
+    }
+
+    #[test]
+    fn blank_session_attach_target_is_rejected() {
+        let err =
+            build_herdr_attach_plan(&SocketTarget::Session("  ".into()), &AttachTarget::Session)
+                .expect_err("blank session should fail");
+
+        assert!(err.to_string().contains("session attach target is blank"));
+    }
+
+    #[test]
+    fn selected_agent_attach_must_be_resolved_before_command_plan() {
+        let err = build_herdr_attach_plan(&SocketTarget::Default, &AttachTarget::SelectedAgent)
+            .expect_err("selected target should be resolved by the worker");
+
+        assert!(err.to_string().contains("must be resolved"));
+    }
 }

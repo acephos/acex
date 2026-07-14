@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
+use acex_config::Config;
 use acex_discover::DiscoveryReport;
 use herdr_client::SocketTarget;
 use serde::Deserialize;
@@ -84,6 +85,7 @@ pub fn build_checkpoint_status(
     target: &SocketTarget,
     discovery: &DiscoveryReport,
     git: GitInfo,
+    config: &Config,
 ) -> Value {
     let tracker = read_tracker(root);
     let ledger = read_ledger(root);
@@ -130,7 +132,7 @@ pub fn build_checkpoint_status(
             "diagnostics": &discovery.diagnostics,
         },
         "config": {
-            "start_presets": []
+            "start_presets": &config.start_presets
         }
     })
 }
@@ -327,6 +329,17 @@ mod tests {
         }));
         fs::write(root.join("docs").join("checkpoint-ledger.jsonl"), first).unwrap();
 
+        let mut config = Config::default();
+        config.start_presets.push(acex_model::StartPreset {
+            id: "review".to_string(),
+            name: "reviewer".to_string(),
+            argv: vec![
+                "omp".to_string(),
+                "--agent".to_string(),
+                "reviewer".to_string(),
+            ],
+            cwd: None,
+        });
         let status = build_checkpoint_status(
             root,
             &SocketTarget::Default,
@@ -336,6 +349,7 @@ mod tests {
                 commit: "0123456789012345678901234567890123456789".to_string(),
                 dirty: false,
             },
+            &config,
         );
 
         assert_eq!(status["schema_version"], json!(1));
@@ -348,6 +362,8 @@ mod tests {
         assert_eq!(status["ledger"]["entries"], json!(1));
         assert_eq!(status["ledger"]["valid"], json!(true));
         assert_eq!(status["herdr"]["side_effects"], json!("none"));
+        assert_eq!(status["config"]["start_presets"][0]["id"], json!("review"));
+
         assert_eq!(status["discovery"]["diagnostics"], json!([]));
     }
 
