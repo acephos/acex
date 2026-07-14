@@ -29,7 +29,7 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 | [docs/biographies/INDEX.md](./docs/biographies/INDEX.md) | Artifact lineage (biographies) |
 | [skills/acex-dev/SKILL.md](./skills/acex-dev/SKILL.md) | Project skill for drop-in agents |
 
-**Continue from last checkpoint:** follow [AGENTS.md#stateless-continuation-new-session](./AGENTS.md#stateless-continuation-new-session). In one line: the tracker checkpoint capsule is live planning state; the JSONL ledger is historical evidence.
+**Continue from last checkpoint:** follow [AGENTS.md#stateless-continuation-new-session](./AGENTS.md#stateless-continuation-new-session). In one line: the tracker checkpoint capsule is live planning state; the JSONL ledger is historical evidence; continuation work is not done until it has a PR with required checks green, merged when branch protection permits.
 
 **Pillars:** Extensibility · Platform-agnostic core · Performance under agentic load · Interpretable observability.
 

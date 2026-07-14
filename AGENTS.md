@@ -38,7 +38,8 @@ Canonical algorithm for the prompt “continue from the last checkpoint”:
    - next work = the ordered `next_ready` array, skipping only items whose dependencies are not met or that have a current owner inside the takeover window.
 5. Conflict rule: for current planning, the tracker checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. The ledger is historical evidence; GOAL/README are orientation.
 6. Run `cargo run -p acex -- --checkpoint-status` before coding when the task depends on repo state, ledger tail, or discovery diagnostics. This mode must not spawn Herdr.
-7. When done, update tracker status/comment/changelog/Last updated and append exactly one JSONL ledger entry for the meaningful change before yielding.
+7. When implementation works, update tracker status/comment/changelog/Last updated and append exactly one JSONL ledger entry for the meaningful change.
+8. Before yielding from a continuation task, push a branch, open a PR, watch required GitHub checks to green, and merge it when branch protection allows. If Code Owners or an explicit human decision blocks merge, yield only after posting the PR URL, observed green checks, and the exact blocker. Local-only completion is valid only when the user explicitly asked not to open a PR or when no files changed.
 
 
 ---
@@ -134,9 +135,10 @@ Observed 2026-07-14: Herdr protocol 16 / 0.7.2-preview; schema artifact lives at
 1. **Orient** — SOUL → GOAL → tracker → ARCHITECTURE.  
 2. **Pick** — one feature ID (Fxx) or explicit tracker task; respect deps.  
 3. **Implement** — smallest vertical slice; keep crates pure to their ownership.  
-4. **Verify** — see [docs/VERIFY.md](./docs/VERIFY.md).  
+4. **Verify locally** — see [docs/VERIFY.md](./docs/VERIFY.md).
 5. **Record** — tracker status + comment + changelog + checkpoint ledger entry.
-6. **Breadcrumbs** — philosophy shifts edit SOUL/GOAL explicitly.
+6. **PR + CI** — open the PR, watch required checks green, merge when allowed, or report the human-review blocker.
+7. **Breadcrumbs** — philosophy shifts edit SOUL/GOAL explicitly.
 
 ### Tracker status vocabulary
 
@@ -185,8 +187,8 @@ Optional: `HERDR_E2E=1 cargo test -p herdr-client --test live_herdr -- --nocaptu
 
 ## What “done” means
 
-Acceptance criteria live in the tracker matrix. Code without tracker update is incomplete when intent changes.  
-Verify gates in [docs/VERIFY.md](./docs/VERIFY.md) must pass.
+Acceptance criteria live in the tracker matrix. Code without tracker update is incomplete when intent changes.
+For checkpoint continuation, “done” means local gates pass, the branch is pushed, a PR exists, required GitHub checks are green, and the PR is merged when branch protection permits; if Code Owners/human review blocks merge, report the green PR URL and blocker instead of claiming merged completion.
 
 ---
 

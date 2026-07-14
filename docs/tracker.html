@@ -223,12 +223,12 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-omp-pr-loop",
+  "latest_comment_id": "2026-07-15-checkpoint-pr-dod",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "d0ccbffe7b36287fa759910ad9d320c696c201ae6caff32ac1f2e39dd671e317",
-    "entry_count": 6
+    "latest_hash": "70b9139fa3a51c4272cd67415c3b5a879f24ec1d88bf03ef8058fd0f3d786cc5",
+    "entry_count": 7
   },
   "next_ready": [
     {
@@ -338,6 +338,7 @@
         <li class="dim">Canonical algorithm: <code>AGENTS.md#stateless-continuation-new-session</code>.</li>
         <li class="dim">Live selector: the <code>acex-checkpoint</code> JSON capsule above; ledger tail = last capsule-declared lines by file order.</li>
         <li class="dim">Conflict rule: tracker checkpoint capsule wins for current planning; ledger is historical evidence; README/GOAL are orientation.</li>
+        <li class="dim">Definition of done: continuation work must reach PR opened + required GitHub checks green, then merge when branch protection permits.</li>
       </ul>
 
     </section>
@@ -649,6 +650,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-checkpoint-pr-dod">
+        <div class="meta"><span class="tag">2026-07-15</span> · Checkpoint PR definition of done · agent</div>
+        <p style="margin:0">
+          Tightened the stateless continuation contract after observing that checkpoint sessions could stop after local verification and ledger updates without raising a PR. <code>AGENTS.md</code>, <code>docs/VERIFY.md</code>, README, and the acex skill now define continuation “done” as local gates green, branch pushed, PR opened, required GitHub checks green, and merge when branch protection permits; if Code Owners or another human gate blocks merge, the final output must report the green PR URL and blocker instead of claiming merged completion.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-omp-pr-loop">
         <div class="meta"><span class="tag">2026-07-15</span> · OMP PR continuation loop · agent</div>
         <p style="margin:0">
@@ -830,7 +838,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>d0ccbffe...</code></td>
+              <td>append-only hash-chain history; latest hash <code>70b9139f...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1023,6 +1031,7 @@
               <tr><td>14</td><td>Continuation selector</td><td>Tracker <code>acex-checkpoint</code> capsule wins live planning</td></tr>
               <tr><td>15</td><td>Ledger role</td><td>Append-only historical evidence; not live planning authority</td></tr>
               <tr><td>16</td><td>Continuation automation</td><td>PR-shaped; no CODEOWNERS bypass; wait foreground for merge</td></tr>
+              <tr><td>17</td><td>Checkpoint DoD</td><td>PR opened + required CI green; merge when protection permits</td></tr>
 
 
             </tbody>
@@ -1035,6 +1044,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
         <li><strong>2026-07-15</strong> — Added PR-shaped OMP continuation loop, shared PR verify helper, verify CI, and branch-protection docs requiring <code>verify / hygiene</code>.</li>
         <li><strong>2026-07-15</strong> — F33 shipped explicit attach target variants with validated agent/session command plans and env-isolated Herdr handoffs.</li>
 
