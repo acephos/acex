@@ -4,6 +4,8 @@ param(
     [int]$MaxIters = 40,
     [string]$Prompt = "continue from the last checkpoint",
     [string]$Profile = "omp-pr-loop",
+    [string]$Model = "github-copilot/gpt-5.5-1m",
+    [string]$Thinking = "high",
     [switch]$AutoMerge,
     [switch]$NoWaitForMerge
 )
@@ -21,9 +23,11 @@ function Invoke-Checked {
 function Invoke-OmpContinuation {
     param(
         [string]$ProfileName,
-        [string]$PromptText
+        [string]$PromptText,
+        [string]$ModelName,
+        [string]$ThinkingLevel
     )
-    & omp --profile $ProfileName --no-session -p $PromptText
+    & omp --model $ModelName --smol $ModelName --slow $ModelName --plan $ModelName --models $ModelName --thinking $ThinkingLevel --profile $ProfileName --no-session -p $PromptText
     if ($LASTEXITCODE -ne 0) {
         throw "omp continuation failed ($LASTEXITCODE)"
     }
@@ -96,7 +100,7 @@ for ($iter = 1; $iter -le $MaxIters; $iter++) {
     $branch = "omp/$branchFeature-$(Get-Date -AsUTC -Format 'yyyyMMddHHmmss')"
 
     Invoke-Checked git checkout -b $branch
-    Invoke-OmpContinuation -ProfileName $Profile -PromptText $Prompt
+    Invoke-OmpContinuation -ProfileName $Profile -PromptText $Prompt -ModelName $Model -ThinkingLevel $Thinking
 
     Invoke-Checked $Bash scripts/verify-pr.sh --base-ref "$Remote/$BaseBranch"
 
