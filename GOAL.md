@@ -94,14 +94,15 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 
 ## Near-term objective (active)
 
-**G1 usable core → polish to MVP ship:**
+**G1.5 recommended polish is active:**
 
-1. ~~Phase 0 / G0~~ · ~~Phase 1 core control plane~~ (board, filters, palette, focus/peek/send/start/wait/zed/attach/worktrees)
-2. **Current:** G1 demo path is honest with live smoke/status checks; start presets, wait timeout UX, and attach target variants are tightened
-3. **Next:** recommended G1.5 (worktree CRUD, pane run, layouts, diff, notify polish, paths chrome, workspace focus)
-4. Phase 2 post-MVP
+1. ~~Phase 0 / G0~~ · ~~Phase 1 / G1 usable core~~ (board, filters, palette, focus/peek/send/start/wait/zed/attach/worktrees)
+2. ~~G1 polish blockers~~ · start presets, wait timeout UX, and attach target variants are tightened
+3. **Current:** recommended G1.5 (worktree CRUD, pane run, layouts, diff, notify polish, paths chrome, workspace focus)
+4. **Next-ready IDs:** F13, F15, F18, F19, F21, F26 from the tracker checkpoint capsule
+5. Phase 2 post-MVP
 
-Phase 1 is usable today; the active work is polish and evidence, not first bring-up.
+Phase 1 is usable today; the active work is recommended G1.5, not first bring-up.
 
 ---
 

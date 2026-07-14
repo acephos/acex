@@ -147,7 +147,7 @@ For discovery-only changes, also run `cargo run -p acex -- --status`; for contin
 
 ## Recipe D — Protocol field / schema drift
 
-Current observed schema/protocol: Herdr protocol 16, version 0.7.2-preview (2026-07-14 refresh).
+Current observed schema/protocol: Herdr protocol 16, version `0.7.2-preview.2026-07-07-f5354780e4ef` (observed 2026-07-15).
 
 1. Refresh schema:  
    `herdr api schema --json > crates/herdr-types/schemas/herdr-api.schema.json`  

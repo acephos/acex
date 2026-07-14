@@ -125,7 +125,7 @@ Add `Intent` → palette action → worker arm → tracker note. Full recipe: [d
 
 Sockets: config-dir `herdr/herdr.sock` · sessions · `HERDR_SOCKET_PATH` / `HERDR_SESSION`; acex config: platform config-dir `acex/config.toml` or `ACEX_CONFIG_DIR` override.
 Schema: `herdr api schema --json` → `crates/herdr-types/schemas/`
-Observed 2026-07-14: Herdr protocol 16 / 0.7.2-preview; schema artifact lives at `crates/herdr-types/schemas/herdr-api.schema.json`.
+Observed 2026-07-15: Herdr protocol 16 / `0.7.2-preview.2026-07-07-f5354780e4ef`; schema artifact lives at `crates/herdr-types/schemas/herdr-api.schema.json`.
 
 
 ---

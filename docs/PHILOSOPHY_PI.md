@@ -56,7 +56,7 @@ discover (fs scan, pure)  →  list summaries (--status/--smoke JSON)
 3. **Extend** — [EXTENDING.md](./EXTENDING.md): Intent → palette → worker; packages may *declare* actions that map to known intent ids.  
 4. **Prove** — [VERIFY.md](./VERIFY.md); discovery fixture tests call shipped scan.
 
-Status: `acex_discover::scan` is shipped; `--status` / `--smoke` expose summaries. G1 core board/palette/focus/peek/send/start/wait/Zed/attach/worktrees is usable; polish remains.
+Status: `acex_discover::scan` is shipped; `--status` / `--smoke` expose summaries. G1 core board/palette/focus/peek/send/start/wait/Zed/attach/worktrees is usable; active phase is recommended G1.5 with next-ready work in the tracker checkpoint capsule.
 
 ---
 
