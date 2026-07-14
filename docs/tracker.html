@@ -223,12 +223,12 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-docs-freshness-audit",
+  "latest_comment_id": "2026-07-15-ps-loop-invocation-fix",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "1f90b08a8de2863fbfbaf5b79338b65d182d0b1ebec3281df0bf84ac9e3e5e54",
-    "entry_count": 8
+    "latest_hash": "a275f6dc2476a3f077c7d05f1b5e32c23b19ae153524396fd496357371fb4ab6",
+    "entry_count": 9
   },
   "next_ready": [
     {
@@ -650,6 +650,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-ps-loop-invocation-fix">
+        <div class="meta"><span class="tag">2026-07-15</span> · PowerShell PR loop invocation fix · agent</div>
+        <p style="margin:0">
+          Fixed the Windows PR loop after <code>scripts/omp-pr-loop.ps1 -AutoMerge</code> failed before starting OMP: PowerShell bound <code>-p</code> as an ambiguous common-parameter prefix on the generic wrapper instead of passing it to <code>omp</code>. The script now invokes OMP through a dedicated native helper so <code>--profile</code>, <code>--no-session</code>, and <code>-p</code> reach the OMP CLI unchanged.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-docs-freshness-audit">
         <div class="meta"><span class="tag">2026-07-15</span> · Docs freshness audit · agent</div>
         <p style="margin:0">
@@ -844,7 +851,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>1f90b08a...</code></td>
+              <td>append-only hash-chain history; latest hash <code>a275f6dc...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1052,6 +1059,7 @@
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
+        <li><strong>2026-07-15</strong> — Fixed PowerShell PR loop invocation so OMP <code>-p</code> is passed to the native CLI instead of PowerShell wrapper binding.</li>
         <li><strong>2026-07-15</strong> — Audited docs for freshness: active phase G1.5, full Herdr version, 46-test baseline, tracker footer/KPI, and biography status claims now align with live checkpoint facts.</li>
         <li><strong>2026-07-15</strong> — Added PR-shaped OMP continuation loop, shared PR verify helper, verify CI, and branch-protection docs requiring <code>verify / hygiene</code>.</li>
         <li><strong>2026-07-15</strong> — F33 shipped explicit attach target variants with validated agent/session command plans and env-isolated Herdr handoffs.</li>
