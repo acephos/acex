@@ -97,7 +97,7 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 **G1 usable core → polish to MVP ship:**
 
 1. ~~Phase 0 / G0~~ · ~~Phase 1 core control plane~~ (board, filters, palette, focus/peek/send/start/wait/zed/attach/worktrees)
-2. **Current:** keep the G1 demo path honest with live smoke/status checks and tighten start presets, wait timeout UX, and attach target variants
+2. **Current:** G1 demo path is honest with live smoke/status checks; start presets, wait timeout UX, and attach target variants are tightened
 3. **Next:** recommended G1.5 (worktree CRUD, pane run, layouts, diff, notify polish, paths chrome, workspace focus)
 4. Phase 2 post-MVP
 

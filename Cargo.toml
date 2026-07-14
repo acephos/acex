@@ -41,3 +41,4 @@ uuid = { version = "1", features = ["v4", "serde"] }
 async-trait = "0.1"
 
 sha2 = "0.10"
+toml = "0.8"

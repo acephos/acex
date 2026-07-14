@@ -78,6 +78,11 @@ Observed Herdr schema/protocol: protocol 16, Herdr 0.7.2-preview (2026-07-14); `
 
 **Drop-in package dirs:** `.acex/packages/*/acex-package.toml`, `packages/*/acex-package.toml`, `skills/*/SKILL.md`.
 
+**Config:** acex reads `config.toml` from the platform config dir under `acex/` (override with `ACEX_CONFIG_DIR`). Start presets live under `[[start_presets]]` with `id`, `name`, `argv`, and optional `cwd`; the start prompt accepts `@id`/`name` and still accepts freeform `name | cmd args` or bare `cmd args`.
+
+**Attach handoff:** selected agents launch `herdr agent attach <target>`; named sessions launch `herdr session attach <name>`; default/explicit-socket session attach keeps the bare `herdr` fallback. Handoffs pass isolated `HERDR_SOCKET_PATH` / `HERDR_SESSION` env from acex config so non-default sessions attach the intended target.
+
+
 **Windows pipe:** `\\.\pipe\{absolute path to herdr.sock}` (sock file is a marker).
 
 ## Non-goals (short)

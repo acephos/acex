@@ -3,7 +3,7 @@
 | | |
 |--|--|
 | **Path** | `crates/acex-config/` |
-| **Purpose** | Runtime config: socket, session, spawn flags, editor bin, peek lines. |
-| **Origin** | Phase 0 env defaults. |
-| **Status** | Env-first runtime config for socket/session/spawn/editor/peek; supports offline/status/smoke paths. File presets deferred. |
-| **How to change** | Add fields + env keys; document in VERIFY/AGENTS if operator-facing. |
+| **Purpose** | Runtime config: socket, session, spawn flags, editor bin, peek lines, start presets. |
+| **Origin** | Phase 0 env defaults; F31 added file-backed start presets. |
+| **Status** | Env-first runtime config plus optional `config.toml` start presets; supports offline/status/smoke/checkpoint paths. |
+| **How to change** | Add fields + env keys; document operator-facing sources in README/AGENTS/tracker. |

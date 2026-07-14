@@ -19,7 +19,7 @@
 acex (bin)           compose: bootstrap, live loop, discovery, intent worker, CLI flags
   ├── acex-ui        ratatui ONLY — keys, palette, board, modals
   ├── acex-model     pure store + reducers + Intent enum (no I/O)
-  ├── acex-config    env/defaults (socket, editor, peek lines)
+  ├── acex-config    env/defaults (socket, editor, peek lines, start presets)
   ├── acex-editor    EditorBridge trait + Zed CLI adapter
   ├── acex-discover  filesystem package/skill scan + progressive disclosure
   ├── herdr-client   Transport, NDJSON, subscribe, unary ops, spawn
@@ -42,7 +42,7 @@ acex (bin)           compose: bootstrap, live loop, discovery, intent worker, CL
 ## Runtime data flow
 
 ```
-discover/status: cwd → acex_discover::scan → --status/--checkpoint-status JSON packages+skills+diagnostics
+discover/status: cwd → acex_discover::scan + Config::load → --status/--checkpoint-status JSON packages+skills+diagnostics+start_presets
 
 bootstrap: ping → session.snapshot → Store::apply_snapshot
            optional agent.list merge

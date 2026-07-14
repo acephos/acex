@@ -79,7 +79,7 @@ acex is **self-aware** (docs know phase and gates) and **self-improving** (frict
 acex (bin)
   ├── acex-ui        ratatui only
   ├── acex-model     store, reducers, filters, waiters, Intent
-  ├── acex-config    session, socket, editor path, peek defaults
+  ├── acex-config    session, socket, editor path, peek defaults, start presets
   ├── acex-editor    editor bridge (Zed default)
   ├── acex-discover  package and skill discovery
   ├── herdr-client   NDJSON, reconnect, spawn server
@@ -119,10 +119,10 @@ Add `Intent` → palette action → worker arm → tracker note. Full recipe: [d
 | Worktrees | `worktree.list/create/open/remove` |
 | Layouts | `layout.apply` (new tab; **no** live PTY preserve) |
 | Toast | `notification.show` |
-| Terminals | `herdr` / `agent attach` |
+| Terminals | `herdr` / `agent attach` / `session attach <name>` |
 | Editor | `zed`, `-n`, `-a`, `--diff` |
 
-Sockets: config-dir `herdr/herdr.sock` · sessions · `HERDR_SOCKET_PATH` / `HERDR_SESSION`  
+Sockets: config-dir `herdr/herdr.sock` · sessions · `HERDR_SOCKET_PATH` / `HERDR_SESSION`; acex config: platform config-dir `acex/config.toml` or `ACEX_CONFIG_DIR` override.
 Schema: `herdr api schema --json` → `crates/herdr-types/schemas/`
 Observed 2026-07-14: Herdr protocol 16 / 0.7.2-preview; schema artifact lives at `crates/herdr-types/schemas/herdr-api.schema.json`.
 

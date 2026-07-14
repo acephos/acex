@@ -71,7 +71,8 @@ async fn main() -> anyhow::Result<()> {
     if checkpoint_status {
         let discovery = discover_project();
         let root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        let body = build_checkpoint_status(&root, &target, &discovery, collect_git_info(&root));
+        let body =
+            build_checkpoint_status(&root, &target, &discovery, collect_git_info(&root), &cfg);
         println!(
             "{}",
             serde_json::to_string_pretty(&body).unwrap_or_else(|_| "{}".into())
@@ -99,7 +100,7 @@ async fn main() -> anyhow::Result<()> {
     let discovery = discover_project();
 
     if status {
-        print_status_json(&store, &discovery, offline);
+        print_status_json(&store, &discovery, offline, &cfg);
         // --status never fails solely because Herdr is down; discovery still emits.
         return Ok(());
     }
@@ -135,7 +136,7 @@ async fn main() -> anyhow::Result<()> {
             store.last_error
         );
         // Stable parseable block (Pi-like machine mode).
-        print_status_json(&store, &discovery, offline);
+        print_status_json(&store, &discovery, offline, &cfg);
         if store.conn != ConnState::Live && !offline {
             anyhow::bail!("smoke failed: not live");
         }
@@ -171,7 +172,8 @@ async fn main() -> anyhow::Result<()> {
         drop(intent_rx);
     }
 
-    let app = App::with_shared(Arc::clone(&store), intent_tx);
+    let app =
+        App::with_shared_and_presets(Arc::clone(&store), intent_tx, cfg.start_presets.clone());
     let quit_ui = Arc::clone(&quit);
     let ui = tokio::task::spawn_blocking(move || {
         let r = acex_ui::run(app);
@@ -205,7 +207,7 @@ fn discover_project() -> DiscoveryReport {
     }
 }
 
-fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: bool) {
+fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: bool, cfg: &Config) {
     let conn = match store.conn {
         ConnState::Offline => "Offline",
         ConnState::Connecting => "Connecting",
@@ -268,7 +270,7 @@ fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: b
             "diagnostics": diagnostics,
         },
         "config": {
-            "start_presets": []
+            "start_presets": &cfg.start_presets
         },
         "seams": [
             "Intent",

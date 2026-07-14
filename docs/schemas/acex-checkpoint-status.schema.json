@@ -93,7 +93,20 @@
       "additionalProperties": false,
       "required": ["start_presets"],
       "properties": {
-        "start_presets": { "type": "array" }
+        "start_presets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "argv"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "argv": { "type": "array", "items": { "type": "string" } },
+              "cwd": { "type": "string" }
+            }
+          }
+        }
       }
     }
   }

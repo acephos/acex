@@ -2,7 +2,7 @@
 
 mod palette;
 
-use acex_model::{AgentState, ConnState, Intent, Store};
+use acex_model::{AgentState, AttachTarget, ConnState, Intent, StartPreset, Store, WaitBadge};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -18,7 +18,7 @@ use ratatui::Terminal;
 use std::io::{self, stdout};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Default)]
 enum Mode {
@@ -48,10 +48,19 @@ pub struct App {
     palette: Palette,
     intent_tx: Option<Sender<Intent>>,
     status_flash: Option<String>,
+    start_presets: Vec<StartPreset>,
 }
 
 impl App {
     pub fn with_shared(store: Arc<Mutex<Store>>, intent_tx: Sender<Intent>) -> Self {
+        Self::with_shared_and_presets(store, intent_tx, Vec::new())
+    }
+
+    pub fn with_shared_and_presets(
+        store: Arc<Mutex<Store>>,
+        intent_tx: Sender<Intent>,
+        start_presets: Vec<StartPreset>,
+    ) -> Self {
         Self {
             store,
             should_quit: false,
@@ -59,6 +68,7 @@ impl App {
             palette: Palette::new(),
             intent_tx: Some(intent_tx),
             status_flash: None,
+            start_presets,
         }
     }
 
@@ -87,7 +97,8 @@ pub fn run(mut app: App) -> io::Result<()> {
 
     let result = loop {
         {
-            let store = app.store.lock().unwrap_or_else(|e| e.into_inner());
+            let mut store = app.store.lock().unwrap_or_else(|e| e.into_inner());
+            store.expire_waits(now_ms());
             terminal.draw(|f| draw(f, &store, &app))?;
         }
 
@@ -179,7 +190,9 @@ fn handle_key(app: &mut App, code: KeyCode, mods: KeyModifiers) {
                         status: AgentState::Blocked,
                     });
                 }
-                KeyCode::Char('a') => app.send_intent(Intent::AttachSelected),
+                KeyCode::Char('a') => app.send_intent(Intent::Attach {
+                    target: AttachTarget::SelectedAgent,
+                }),
                 KeyCode::Char('z') => app.send_intent(Intent::OpenZed {
                     path: None,
                     mode: acex_model::ZedOpenMode::Default,
@@ -228,14 +241,9 @@ fn submit_input(app: &mut App) {
                 }
             }
             InputKind::StartAgent => {
-                // format: name | cmd arg1 arg2   OR just cmd
-                let (name, argv) = parse_start(&buffer);
+                let (name, argv, cwd) = parse_start(&buffer, &app.start_presets);
                 if !argv.is_empty() {
-                    app.send_intent(Intent::StartAgent {
-                        name,
-                        argv,
-                        cwd: None,
-                    });
+                    app.send_intent(Intent::StartAgent { name, argv, cwd });
                 }
             }
             InputKind::FilterQuery => {
@@ -255,16 +263,38 @@ fn submit_input(app: &mut App) {
     }
 }
 
-fn parse_start(raw: &str) -> (String, Vec<String>) {
+fn parse_start(raw: &str, presets: &[StartPreset]) -> (String, Vec<String>, Option<String>) {
     let raw = raw.trim();
+    if let Some(preset) = find_start_preset(raw, presets) {
+        return (preset.name.clone(), preset.argv.clone(), preset.cwd.clone());
+    }
     if let Some((name, rest)) = raw.split_once('|') {
         let argv = shellish_split(rest.trim());
-        (name.trim().to_string(), argv)
+        (name.trim().to_string(), argv, None)
     } else {
         let argv = shellish_split(raw);
         let name = argv.first().cloned().unwrap_or_else(|| "agent".into());
-        (name, argv)
+        (name, argv, None)
     }
+}
+
+fn find_start_preset<'a>(raw: &str, presets: &'a [StartPreset]) -> Option<&'a StartPreset> {
+    let selector = raw.strip_prefix('@').unwrap_or(raw);
+    presets
+        .iter()
+        .find(|preset| preset.id == selector || preset.name == selector)
+}
+
+fn start_input_title(presets: &[StartPreset]) -> String {
+    if presets.is_empty() {
+        return "start agent · name|cmd args  OR  cmd args".into();
+    }
+    let ids = presets
+        .iter()
+        .map(|preset| preset.id.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("start agent · @{ids} OR name|cmd args OR cmd args")
 }
 
 fn shellish_split(s: &str) -> Vec<String> {
@@ -285,7 +315,7 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
         }
         PaletteAction::Start => {
             app.mode = Mode::Input {
-                title: "start agent · name|cmd args  OR  cmd args".into(),
+                title: start_input_title(&app.start_presets),
                 buffer: String::new(),
                 kind: InputKind::StartAgent,
             };
@@ -312,8 +342,12 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
                 mode: acex_model::ZedOpenMode::NewWindow,
             });
         }
-        PaletteAction::Attach => app.send_intent(Intent::AttachSelected),
-        PaletteAction::AttachSession => app.send_intent(Intent::AttachSession),
+        PaletteAction::Attach => app.send_intent(Intent::Attach {
+            target: AttachTarget::SelectedAgent,
+        }),
+        PaletteAction::AttachSession => app.send_intent(Intent::Attach {
+            target: AttachTarget::Session,
+        }),
         PaletteAction::Worktrees => app.send_intent(Intent::WorktreeList),
         PaletteAction::Resnapshot => app.send_intent(Intent::Resnapshot),
         PaletteAction::RefreshAgents => app.send_intent(Intent::RefreshAgents),
@@ -401,8 +435,8 @@ fn draw_board(f: &mut ratatui::Frame, area: Rect, store: &Store) {
             let wait = store
                 .waits
                 .iter()
-                .find(|w| w.target == target && w.armed)
-                .map(|w| format!(" ⏳{}", w.want.as_str()))
+                .find(|w| w.target == target)
+                .map(wait_indicator)
                 .unwrap_or_default();
             let line = format!(
                 "{mark} [{:>8}] {} ({}){wait}",
@@ -514,6 +548,24 @@ fn draw_footer(f: &mut ratatui::Frame, area: Rect, store: &Store, app: &App) {
     let p = Paragraph::new(help).block(Block::default().borders(Borders::ALL).title("keys"));
     f.render_widget(p, area);
 }
+fn wait_indicator(w: &WaitBadge) -> String {
+    if w.armed {
+        format!(" ⏳{}", w.want.as_str())
+    } else if w.resolved {
+        format!(" ✓{}", w.want.as_str())
+    } else if w.expired {
+        format!(" ⚠{} expired", w.want.as_str())
+    } else {
+        String::new()
+    }
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis().min(u128::from(u64::MAX)) as u64)
+        .unwrap_or(0)
+}
 
 fn draw_palette_modal(f: &mut ratatui::Frame, area: Rect, app: &App) {
     let popup = centered_rect(60, 60, area);
@@ -569,4 +621,49 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn start_parser_resolves_configured_preset() {
+        let presets = vec![StartPreset {
+            id: "review".into(),
+            name: "reviewer".into(),
+            argv: vec!["omp".into(), "--agent".into(), "reviewer".into()],
+            cwd: Some("crates".into()),
+        }];
+
+        let (name, argv, cwd) = parse_start("@review", &presets);
+
+        assert_eq!(name, "reviewer");
+        assert_eq!(argv, ["omp", "--agent", "reviewer"]);
+        assert_eq!(cwd.as_deref(), Some("crates"));
+    }
+
+    #[test]
+    fn start_parser_preserves_freeform_fallback() {
+        let (name, argv, cwd) = parse_start("worker | cargo test -p acex", &[]);
+
+        assert_eq!(name, "worker");
+        assert_eq!(argv, ["cargo", "test", "-p", "acex"]);
+        assert_eq!(cwd, None);
+    }
+
+    #[test]
+    fn wait_indicator_shows_expired_state() {
+        let wait = WaitBadge {
+            target: "w1:p1".into(),
+            want: AgentState::Done,
+            armed: false,
+            resolved: false,
+            expired: true,
+            expires_at_ms: Some(30_000),
+            message: "wait expired".into(),
+        };
+
+        assert_eq!(wait_indicator(&wait), " ⚠done expired");
+    }
 }

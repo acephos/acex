@@ -196,7 +196,7 @@
         <span class="chip mute">G1 = MVP ship</span>
         <span class="chip mute">No calendar estimates</span>
       </div>
-      <p class="updated">Last updated · 2026-07-14 · append-only checkpoint ledger</p>
+      <p class="updated">Last updated · 2026-07-15 · append-only checkpoint ledger</p>
     </header>
 
     <nav class="menu" aria-label="Sections">
@@ -218,54 +218,90 @@
     <script type="application/json" id="acex-checkpoint">
 {
   "schema_version": 1,
-  "last_updated": "2026-07-14",
-  "active_gate": "G1",
-  "active_phase": "G1 polish",
+  "last_updated": "2026-07-15",
+  "active_gate": "G1.5",
+  "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-14-stateless-hardening",
+  "latest_comment_id": "2026-07-15-f33-attach-targets",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "f55cdd8b1b938bdef05bee038323031d2b9bba973eb6d64c4a6115f8ddf46016",
-    "entry_count": 4
+    "latest_hash": "92e6db4c25a466e7da9d3df849994132b36fca82cb3d2b76932b071404db9af7",
+    "entry_count": 5
   },
   "next_ready": [
     {
-      "id": "F31",
-      "title": "Config-backed start presets",
+      "id": "F13",
+      "title": "Worktree CRUD",
       "status": "todo",
-      "phase": "G1 polish",
-      "depends_on": ["F09"],
+      "phase": "G1.5 recommended",
+      "depends_on": ["F12"],
       "owner": null,
       "last_touched": null,
       "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Start flow exposes configured presets and preserves freeform fallback; status/checkpoint output reports configured presets or an empty list; docs describe config source.",
-      "proof": ["targeted unit tests", "cargo run -p acex -- --checkpoint-status"]
+      "acceptance": "Create/open/remove worktrees with force called out explicitly; open handoff stays external.",
+      "proof": ["worker/intent tests", "manual status/smoke check"]
     },
     {
-      "id": "F32",
-      "title": "Wait timeout UX",
+      "id": "F15",
+      "title": "Pane run",
       "status": "todo",
-      "phase": "G1 polish",
-      "depends_on": ["F11"],
+      "phase": "G1.5 recommended",
+      "depends_on": ["F08"],
       "owner": null,
       "last_touched": null,
       "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Wait badges have deterministic timeout/expiry UX; expiry is visible, non-blocking, and event resolution still wins when status arrives first.",
-      "proof": ["model reducer tests for timeout/resolve ordering", "UI smoke or snapshot if available"]
+      "acceptance": "Run a command through Herdr pane handoff and refresh peek without blocking the UI.",
+      "proof": ["worker/intent tests", "manual status/smoke check"]
     },
     {
-      "id": "F33",
-      "title": "Attach target variants",
+      "id": "F18",
+      "title": "Diff in Zed",
       "status": "todo",
-      "phase": "G1 polish",
-      "depends_on": ["F20"],
+      "phase": "G1.5 recommended",
+      "depends_on": ["F17"],
       "owner": null,
       "last_touched": null,
       "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Agent attach and session attach are explicit, documented, and robust against missing/invalid targets; errors are actionable.",
-      "proof": ["worker/intent tests or command-construction tests", "manual status/smoke check"]
+      "acceptance": "Zed diff action validates paths and opens the external editor bridge.",
+      "proof": ["editor/intent tests", "manual status/smoke check"]
+    },
+    {
+      "id": "F19",
+      "title": "Layout presets",
+      "status": "todo",
+      "phase": "G1.5 recommended",
+      "depends_on": ["F02"],
+      "owner": null,
+      "last_touched": null,
+      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
+      "acceptance": "Layout apply is explicit that Herdr opens a new tab and does not preserve live PTYs.",
+      "proof": ["worker/intent tests", "manual status/smoke check"]
+    },
+    {
+      "id": "F21",
+      "title": "Paths chrome",
+      "status": "todo",
+      "phase": "G1.5 recommended",
+      "depends_on": ["F17"],
+      "owner": null,
+      "last_touched": null,
+      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
+      "acceptance": "Snapshot cwd paths are visible as read-only handoff targets.",
+      "proof": ["UI rendering tests", "manual status/smoke check"]
+    },
+    {
+      "id": "F26",
+      "title": "Workspace focus",
+      "status": "todo",
+      "phase": "G1.5 recommended",
+      "depends_on": ["F02"],
+      "owner": null,
+      "last_touched": null,
+      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
+      "acceptance": "Board scopes can focus workspace context without hiding source-of-truth state.",
+      "proof": ["model/UI tests", "manual status/smoke check"]
     }
   ],
   "blocked": []
@@ -278,7 +314,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G1</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">polish</div><div class="l">Next gate</div></div>
-        <div class="cell"><div class="n">33</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">46</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -286,17 +322,16 @@
       <div class="say" style="margin-top:16px">
         <span class="soul">♥</span>
         <p style="margin:0">
-          <strong>Active work:</strong> Phase 1 / G1 usable core is in place — board, filters, palette,
-          focus/peek/send/start/wait/zed/attach/worktrees via intent worker. Current work is G1 polish.
+          <strong>Active work:</strong> G1 usable core and polish blockers are shipped — board, filters, palette,
+          focus/peek/send/start/wait/zed/attach/worktrees via intent worker. Current work moves to recommended G1.5.
         </p>
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F31 · Config-backed start presets</strong> — owner=unassigned; deps=F09; proof: targeted unit tests + <code>cargo run -p acex -- --checkpoint-status</code>.</li>
-        <li><strong>F32 · Wait timeout UX</strong> — owner=unassigned; deps=F11; proof: model reducer tests for timeout/resolve ordering + UI smoke/snapshot if available.</li>
-        <li><strong>F33 · Attach target variants</strong> — owner=unassigned; deps=F20; proof: worker/intent or command-construction tests + manual status/smoke.</li>
+        <li><strong>F13 · Worktree CRUD</strong> — deps=F12; first recommended G1.5 slice.</li>
+        <li><strong>Also ready:</strong> F15 pane run, F18 Zed diff, F19 layouts, F21 paths chrome, F26 workspace focus.</li>
       </ol>
-      <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. Open blockers are encoded as F31/F32/F33, not free prose.</p>
+      <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
       <ul>
         <li class="dim">Prompt: “continue from the last checkpoint.”</li>
@@ -345,16 +380,16 @@
         <p class="muted">Parallel: types/schema · transport · UI shell</p>
       </div>
 
-      <div class="phase gate active">
-        <h3>* Phase 1 — Agent control plane · MVP SHIP GATE (G1) · ACTIVE</h3>
-        <p class="dim">Features: F06–F12, F14, F17, F20, F25</p>
-        <p><span class="st st-doing">doing</span> usable core in · polish + full demo script</p>
+      <div class="phase gate">
+        <h3>* Phase 1 — Agent control plane · MVP SHIP GATE (G1) · DONE</h3>
+        <p class="dim">Features: F06–F12, F14, F17, F20, F25, F31–F33</p>
+        <p><span class="st st-done">done</span> usable core + G1 polish shipped with live proof</p>
       </div>
 
-      <div class="phase">
-        <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5)</h3>
+      <div class="phase active">
+        <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-todo">todo</span></p>
+        <p><span class="st st-doing">doing</span> recommended polish; next F13</p>
       </div>
 
       <div class="phase post">
@@ -582,25 +617,25 @@
               <td><span class="badge m">M</span></td><td>F06</td><td>counts/events/waits; ages later</td>
             </tr>
             <tr>
-              <td>F31</td><td><span class="st st-todo">todo</span></td>
+              <td>F31</td><td><span class="st st-done">done</span></td>
               <td>Config-backed start presets</td><td class="pri-p0">P0</td><td>1</td>
-              <td>agent.start + config</td><td>Configured presets + freeform fallback; status/checkpoint reports presets or []</td>
+              <td>agent.start + config</td><td>Configured presets + freeform fallback shipped; status/checkpoint reports presets or []</td>
               <td><span class="badge s">S</span></td><td>F09</td>
-              <td>owner=unassigned; last_touched=null; takeover=safe_if_no_owner_or_last_touched_over_24h; proof=targeted unit tests + checkpoint-status; non-goal=runtime plugin execution; decisions=3</td>
+              <td>done 2026-07-14; config source=platform config-dir acex/config.toml or ACEX_CONFIG_DIR; proof=targeted unit tests + configured checkpoint-status + full verify gates; non-goal=runtime plugin execution; decisions=3</td>
             </tr>
             <tr>
-              <td>F32</td><td><span class="st st-todo">todo</span></td>
+              <td>F32</td><td><span class="st st-done">done</span></td>
               <td>Wait timeout UX</td><td class="pri-p0">P0</td><td>1</td>
               <td>wait/status events</td><td>Expiry visible/non-blocking; status event resolution wins before timeout</td>
               <td><span class="badge s">S</span></td><td>F11</td>
-              <td>owner=unassigned; last_touched=null; takeover=safe_if_no_owner_or_last_touched_over_24h; proof=model reducer timeout/resolve ordering tests + UI smoke/snapshot if available; non-goal=blocking waits; decisions=8</td>
+              <td>done 2026-07-14; wait badges use deterministic deadlines + pure expiry reducer; UI shows armed/resolved/expired states; proof=model reducer ordering tests + UI indicator test + live smoke; non-goal=blocking waits; decisions=8</td>
             </tr>
             <tr>
-              <td>F33</td><td><span class="st st-todo">todo</span></td>
+              <td>F33</td><td><span class="st st-done">done</span></td>
               <td>Attach target variants</td><td class="pri-p0">P0</td><td>1</td>
-              <td>agent attach / session attach</td><td>Agent and session attach are explicit; missing/invalid targets return actionable errors</td>
+              <td>agent attach / session attach</td><td>Explicit AttachTarget; env-isolated Herdr handoff</td>
               <td><span class="badge s">S</span></td><td>F20</td>
-              <td>owner=unassigned; last_touched=null; takeover=safe_if_no_owner_or_last_touched_over_24h; proof=worker/intent or command-construction tests + manual status/smoke; non-goal=embedded terminal; decisions=1,10</td>
+              <td>done 2026-07-15; selected agent resolves before spawn; blank targets rejected; named sessions use <code>herdr session attach &lt;name&gt;</code>; default session keeps bare <code>herdr</code>; proof=Herdr help + command-plan tests + status/smoke; non-goal=embedded terminal; decisions=1,10</td>
             </tr>
 
           </tbody>
@@ -612,6 +647,27 @@
     <section id="comments" class="box">
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
+
+
+      <div class="comment" id="2026-07-15-f33-attach-targets">
+        <div class="meta"><span class="tag">2026-07-15</span> · F33 attach targets · agent</div>
+        <p style="margin:0">
+          Shipped explicit attach target variants: <code>Intent::Attach</code> now carries <code>AttachTarget</code>, selected-agent attach resolves and validates targets before spawning, named sessions use the verified <code>herdr session attach &lt;name&gt;</code> subcommand, and attach handoffs isolate <code>HERDR_SOCKET_PATH</code>/<code>HERDR_SESSION</code> from the active <code>SocketTarget</code>. Verified with Herdr CLI help, command-construction tests, workspace gates, live status, and smoke.
+        </p>
+      </div>
+      <div class="comment" id="2026-07-14-f32-wait-timeouts">
+        <div class="meta"><span class="tag">2026-07-14</span> · F32 wait timeouts · agent</div>
+        <p style="margin:0">
+          Shipped deterministic wait expiry: wait badges now carry deadlines, <code>Store::expire_waits</code> marks expired waits without blocking, status events resolve armed waits before timeout when they arrive first, and the board/detail UI surfaces armed, resolved, and expired wait states. Verified with model reducer ordering tests, a UI indicator test, workspace gates, live status, checkpoint-status, and smoke.
+        </p>
+      </div>
+
+      <div class="comment" id="2026-07-14-f31-start-presets">
+        <div class="meta"><span class="tag">2026-07-14</span> · F31 start presets · agent</div>
+        <p style="margin:0">
+          Shipped config-backed start presets: <code>acex-config</code> now reads <code>config.toml</code> from the platform acex config dir (or <code>ACEX_CONFIG_DIR</code>), the start prompt exposes configured preset ids via <code>@id</code> while preserving freeform <code>name | cmd args</code> fallback, and both <code>--status</code> and <code>--checkpoint-status</code> serialize <code>config.start_presets</code>. Verified with targeted tests, workspace gates, live status/smoke, and configured checkpoint-status proof.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-14-stateless-hardening">
         <div class="meta"><span class="tag">2026-07-14</span> · stateless hardening · agent</div>
@@ -767,7 +823,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>f55cdd8b...</code></td>
+              <td>append-only hash-chain history; latest hash <code>ff1596ad...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -959,6 +1015,10 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F33 shipped explicit attach target variants with validated agent/session command plans and env-isolated Herdr handoffs.</li>
+
+        <li><strong>2026-07-14</strong> — F32 shipped deterministic wait timeout UX with pure expiry reducer, visible expired badges, and event-before-timeout ordering tests.</li>
+        <li><strong>2026-07-14</strong> — F31 shipped config-backed start presets with config.toml loading, preset selectors in the start prompt, and status/checkpoint JSON output.</li>
         <li><strong>2026-07-14</strong> — Hardened stateless continuation: checkpoint capsule, F31–F33 next-ready rows, fail-closed ledger validator, CI/CODEOWNERS/protection docs, discovery diagnostics, and <code>--checkpoint-status</code>.</li>
         <li><strong>2026-07-14</strong> — Docs reality refresh: 8 crates, G1 usable core, 29-test baseline, protocol 16 / Herdr 0.7.2-preview, packages=1 skills=1.</li>
         <li><strong>2026-07-14</strong> — Added append-only JSONL checkpoint ledger at <code>docs/checkpoint-ledger.jsonl</code>.</li>
