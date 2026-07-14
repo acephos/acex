@@ -28,6 +28,8 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 | [docs/biographies/INDEX.md](./docs/biographies/INDEX.md) | Artifact lineage (biographies) |
 | [skills/acex-dev/SKILL.md](./skills/acex-dev/SKILL.md) | Project skill for drop-in agents |
 
+**Continue from last checkpoint:** open the repo in a new agent session and ask it to “continue from the last checkpoint.” The agent should read `AGENTS.md` and `docs/tracker.html`; tracker Now/Open blockers/latest Comment are the durable checkpoint, not chat history.
+
 **Pillars:** Extensibility · Platform-agnostic core · Performance under agentic load · Interpretable observability.
 
 ## Status

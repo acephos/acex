@@ -196,7 +196,7 @@
         <span class="chip mute">G1 = MVP ship</span>
         <span class="chip mute">No calendar estimates</span>
       </div>
-      <p class="updated">Last updated · 2026-07-14 · docs reality refresh</p>
+      <p class="updated">Last updated · 2026-07-14 · stateless continuation checkpoint</p>
     </header>
 
     <nav class="menu" aria-label="Sections">
@@ -239,6 +239,13 @@
         <li class="dim">Agent start argv freeform only (presets not yet config-backed).</li>
         <li class="dim">Wait is non-blocking badge (no wall-clock timeout auto-clear).</li>
         <li class="dim">Attach uses <code>herdr agent attach &lt;target&gt;</code>; session attach is separate palette item.</li>
+      </ul>
+      <h3>* Stateless checkpoint</h3>
+      <ul>
+        <li class="dim">Prompt: “continue from the last checkpoint.”</li>
+        <li class="dim">Read order: SOUL → GOAL → tracker Now/Open blockers/latest Comment → AGENTS.</li>
+        <li class="dim">Durable state is this tracker: Now, feature matrix, top Comment, Changelog, Artifacts. Chat is not memory.</li>
+        <li class="dim">Default next move: pick the first active/doing or unblocked todo item under the active phase, then update this tracker before yielding.</li>
       </ul>
     </section>
 
@@ -524,6 +531,15 @@
     <!-- COMMENTS -->
     <section id="comments" class="box">
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-14</span> · stateless continuation · agent</div>
+        <p style="margin:0">
+          Added explicit continuation contract: a fresh agent told “continue from the last checkpoint” should use
+          tracker Now/Open blockers/latest Comment/feature matrix as durable state, not chat history. Default next work
+          remains G1 polish: start presets, wait timeout UX, attach variants, then G1.5 items.
+        </p>
+      </div>
 
       <div class="comment">
         <div class="meta"><span class="tag">2026-07-14</span> · docs reality refresh · agent</div>
@@ -825,6 +841,7 @@
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
         <li><strong>2026-07-14</strong> — Docs reality refresh: 8 crates, G1 usable core, 29-test baseline, protocol 16 / Herdr 0.7.2-preview, packages=1 skills=1.</li>
+        <li><strong>2026-07-14</strong> — Added stateless continuation checkpoint contract for fresh agent sessions.</li>
         <li><strong>2026-07-13</strong> — Pi alignment: PHILOSOPHY_PI.md, acex-discover, --status JSON, example package, skill discovery (no TS loaders).</li>
         <li><strong>2026-07-13</strong> — Production-ready pass: agent doc graph, biographies, acex-dev skill, fmt/clippy gates, poison-safe locks, expanded shipped-function tests.</li>
         <li><strong>2026-07-13</strong> — Phase 1 core: board/filters/palette/focus/peek/send/start/wait/zed/attach/worktrees. G1 polish remains.</li>

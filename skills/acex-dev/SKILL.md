@@ -18,6 +18,8 @@ description: Develop and maintain the acex Herdr control-plane (SOUL/GOAL/tracke
 
 Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 
+**Continuation prompt:** “continue from the last checkpoint” means read tracker Now/Open blockers/latest Comment and the feature matrix, then proceed without chat history.
+
 ## Ownership (never violate)
 
 - Only `herdr-client` talks NDJSON to Herdr.  

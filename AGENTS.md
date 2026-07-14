@@ -24,6 +24,17 @@ List with `cargo run -p acex -- --status` (JSON: `packages`, `skills`). Current 
 
 Chat history is **not** project memory.
 
+## Stateless continuation (new session)
+
+If the operator says “continue from the last checkpoint,” do **not** rely on chat history. Treat this repo as the checkpoint:
+
+1. Read `SOUL.md`, `GOAL.md`, `docs/tracker.html` → Now/Open blockers/latest Comment, then this file.
+2. Treat `docs/tracker.html` Now + Open blockers + latest Comment + feature matrix as the current state.
+3. If no explicit task is given, pick the first tracker item that is `doing` or an unblocked `todo` under the active phase.
+4. Run `cargo run -p acex -- --status` before coding when the task depends on current Herdr/discovery reality.
+5. When done, update tracker status/comment/changelog/Last updated so the next stateless agent can resume with no chat context.
+
+
 ---
 
 ## Project memory (single source of planning truth)
