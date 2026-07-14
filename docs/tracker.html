@@ -223,12 +223,12 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-ps-loop-invocation-fix",
+  "latest_comment_id": "2026-07-15-pr-loop-model-pin",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "a275f6dc2476a3f077c7d05f1b5e32c23b19ae153524396fd496357371fb4ab6",
-    "entry_count": 9
+    "latest_hash": "4b013f7b9077ee0d9a5bbf149ee49cee8b55d1cb34b2476ab002524fc8dcb2c2",
+    "entry_count": 10
   },
   "next_ready": [
     {
@@ -650,6 +650,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-pr-loop-model-pin">
+        <div class="meta"><span class="tag">2026-07-15</span> · PR loop model pin · agent</div>
+        <p style="margin:0">
+          Pinned PR-loop OMP invocations to <code>github-copilot/gpt-5.5-1m</code> with <code>--thinking high</code> after a continuation run selected Gemini and failed on Google quota before starting F13. The PowerShell and Bash loops now force the default, smol, slow, and plan roles to GPT-5.5 1M and restrict model cycling to that model, while still allowing explicit <code>-Model</code>/<code>--model</code> overrides.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-ps-loop-invocation-fix">
         <div class="meta"><span class="tag">2026-07-15</span> · PowerShell PR loop invocation fix · agent</div>
         <p style="margin:0">
@@ -851,7 +858,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>a275f6dc...</code></td>
+              <td>append-only hash-chain history; latest hash <code>4b013f7b...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1059,6 +1066,7 @@
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
+        <li><strong>2026-07-15</strong> — Pinned PR-loop OMP sessions to GitHub Copilot GPT-5.5 1M with high thinking to avoid Gemini quota fallback.</li>
         <li><strong>2026-07-15</strong> — Fixed PowerShell PR loop invocation so OMP <code>-p</code> is passed to the native CLI instead of PowerShell wrapper binding.</li>
         <li><strong>2026-07-15</strong> — Audited docs for freshness: active phase G1.5, full Herdr version, 46-test baseline, tracker footer/KPI, and biography status claims now align with live checkpoint facts.</li>
         <li><strong>2026-07-15</strong> — Added PR-shaped OMP continuation loop, shared PR verify helper, verify CI, and branch-protection docs requiring <code>verify / hygiene</code>.</li>
