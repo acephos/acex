@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ACEX · Living Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000; --fg: #fff; --dim: #9a9a9a; --muted: #5a5a5a;
+      --panel: #0a0a0a; --border: #fff; --border-dim: #444;
+      --select: #ffff00; --heart: #ff0000;
+      --todo: #5a5a5a; --doing: #ffff00; --blocked: #ff6666;
+      --review: #ccc; --done: #fff; --cut: #333;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font-family: "Share Tech Mono", ui-monospace, monospace;
+      font-size: 15px; line-height: 1.55; min-height: 100vh;
+    }
+    body::before {
+      content: ""; pointer-events: none; position: fixed; inset: 0; z-index: 9999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px);
+      opacity: .35;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 96px; }
+    .box {
+      background: var(--panel); border: 4px solid var(--border); border-radius: 2px;
+      padding: 18px 20px; margin: 0 0 22px;
+      box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--border-dim); position: relative;
+    }
+    .box-title {
+      font-family: "Press Start 2P", monospace; font-size: 10px; letter-spacing: 1px;
+      text-transform: uppercase; margin: 0 0 14px; padding-bottom: 10px;
+      border-bottom: 2px solid var(--border-dim);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .box-title .dot { width: 10px; height: 10px; background: var(--fg); flex-shrink: 0; }
+    .box-title .dot.live { background: var(--select); box-shadow: 0 0 6px var(--select); }
+    header.hero { text-align: center; margin-bottom: 28px; }
+    .heart {
+      display: inline-block; width: 14px; height: 14px; background: var(--heart);
+      transform: rotate(-45deg); margin: 0 8px 2px; position: relative; vertical-align: middle;
+      box-shadow: 0 0 8px rgba(255,0,0,.55);
+    }
+    .heart::before, .heart::after {
+      content: ""; position: absolute; width: 14px; height: 14px;
+      background: var(--heart); border-radius: 50%;
+    }
+    .heart::before { top: -7px; left: 0; }
+    .heart::after { top: 0; left: 7px; }
+    h1 {
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(14px, 2.6vw, 20px); line-height: 1.6; margin: 12px 0 8px;
+      text-shadow: 2px 2px 0 #333;
+    }
+    .tagline { color: var(--dim); font-size: 14px; max-width: 720px; margin: 0 auto 16px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+    .chip {
+      font-family: "Press Start 2P", monospace; font-size: 8px;
+      border: 2px solid var(--border); padding: 8px 10px; color: var(--fg); background: #000;
+      text-transform: uppercase;
+    }
+    .chip.mute { border-color: var(--border-dim); color: var(--dim); }
+    .chip.y { border-color: var(--select); color: var(--select); }
+    nav.menu {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px; margin-bottom: 28px;
+    }
+    nav.menu a {
+      font-family: "Press Start 2P", monospace; font-size: 8px; color: var(--fg);
+      text-decoration: none; border: 2px solid var(--border-dim); padding: 12px 10px;
+      background: #000; text-transform: uppercase; line-height: 1.5;
+    }
+    nav.menu a:hover, nav.menu a:focus { border-color: var(--select); color: var(--select); outline: none; }
+    nav.menu a::before { content: "* "; color: var(--muted); }
+    nav.menu a:hover::before { color: var(--select); }
+    h2 { font-family: "Press Start 2P", monospace; font-size: 11px; margin: 0 0 14px; }
+    h3 { font-family: "Press Start 2P", monospace; font-size: 9px; margin: 18px 0 10px; color: var(--dim); }
+    p { margin: 0 0 12px; }
+    .dim { color: var(--dim); }
+    .muted { color: var(--muted); }
+    a { color: var(--fg); text-underline-offset: 3px; }
+    a:hover { color: var(--select); }
+    ul, ol { margin: 0 0 12px; padding-left: 1.25rem; }
+    li { margin-bottom: 6px; }
+    code {
+      font-family: "Share Tech Mono", monospace; background: #111;
+      border: 1px solid var(--border-dim); padding: 1px 5px; font-size: .95em;
+    }
+    pre {
+      background: #050505; border: 2px solid var(--border-dim); padding: 14px 16px;
+      overflow-x: auto; font-size: 12px; line-height: 1.45; color: var(--dim); margin: 0 0 12px;
+    }
+    pre .w { color: var(--fg); }
+    pre .y { color: var(--select); }
+    .table-scroll { overflow-x: auto; margin: 0 0 8px; border: 2px solid var(--border-dim); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+    th, td { border: 1px solid var(--border-dim); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th {
+      font-family: "Press Start 2P", monospace; font-size: 7px; letter-spacing: .5px;
+      background: #111; white-space: nowrap; text-transform: uppercase;
+    }
+    tr:nth-child(even) td { background: #070707; }
+    tr:hover td { background: #141414; }
+    .st {
+      font-family: "Press Start 2P", monospace; font-size: 7px;
+      border: 1px solid; padding: 4px 6px; display: inline-block; white-space: nowrap;
+    }
+    .st-todo { color: var(--dim); border-color: var(--todo); }
+    .st-doing { color: var(--select); border-color: var(--select); }
+    .st-blocked { color: var(--blocked); border-color: var(--blocked); }
+    .st-review { color: var(--review); border-color: var(--review); }
+    .st-done { color: var(--fg); border-color: var(--fg); background: #1a1a1a; }
+    .st-cut { color: var(--muted); border-color: var(--cut); text-decoration: line-through; }
+    .pri-p0 { color: var(--select); font-weight: bold; }
+    .pri-p1 { color: var(--fg); }
+    .pri-p2 { color: var(--muted); }
+    .badge {
+      display: inline-block; border: 1px solid var(--border); padding: 1px 6px; font-size: 11px;
+    }
+    .badge.s { border-color: var(--dim); color: var(--dim); }
+    .badge.m { border-color: var(--fg); }
+    .badge.l { border-color: var(--select); color: var(--select); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 760px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      table { min-width: 520px; }
+    }
+    .phase { border-left: 4px solid var(--fg); padding-left: 14px; margin-bottom: 18px; }
+    .phase.gate { border-left-color: var(--select); }
+    .phase.post { border-left-color: var(--muted); }
+    .phase.active { border-left-color: var(--select); background: #0c0c00; padding: 12px 12px 12px 14px; }
+    .phase h3 { margin-top: 0; color: var(--fg); }
+    .phase.gate h3, .phase.active h3 { color: var(--select); }
+    .say {
+      border: 3px solid var(--border); padding: 16px 18px 16px 48px;
+      position: relative; margin: 12px 0; background: #000;
+    }
+    .say .soul {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--heart); font-size: 14px; text-shadow: 0 0 6px rgba(255,0,0,.6);
+    }
+    .comment {
+      border: 2px solid var(--border-dim); padding: 12px 14px; margin: 0 0 10px; background: #050505;
+    }
+    .comment .meta {
+      font-family: "Press Start 2P", monospace; font-size: 7px; color: var(--dim); margin-bottom: 8px;
+    }
+    .comment .meta .tag { color: var(--select); }
+    .kpi {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+    }
+    .kpi .cell {
+      border: 2px solid var(--border-dim); padding: 12px; text-align: center; background: #000;
+    }
+    .kpi .n {
+      font-family: "Press Start 2P", monospace; font-size: 14px; color: var(--select); margin-bottom: 8px;
+    }
+    .kpi .l { font-size: 11px; color: var(--dim); text-transform: uppercase; }
+    footer { margin-top: 36px; text-align: center; }
+    .fight-bar {
+      display: inline-flex; flex-wrap: wrap; border: 3px solid var(--border);
+      font-family: "Press Start 2P", monospace; font-size: 9px;
+    }
+    .fight-bar span {
+      padding: 12px 16px; border-right: 2px solid var(--border-dim); color: var(--dim);
+    }
+    .fight-bar span:last-child { border-right: none; }
+    .fight-bar span.active { color: var(--select); background: #111; }
+    .foot-note { margin-top: 16px; color: var(--muted); font-size: 12px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--dim); margin-bottom: 10px; }
+    .updated {
+      font-family: "Press Start 2P", monospace; font-size: 7px; color: var(--select); margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="hero box">
+      <div><span class="heart" aria-hidden="true"></span></div>
+      <h1>ACEX TRACKER</h1>
+      <p class="tagline">
+        Sole living project memory.<br />
+        Features · phases · comments · artifacts · decisions.<br />
+        Philosophy lives in <code>SOUL.md</code> + <code>GOAL.md</code> · ops in <code>AGENTS.md</code>.
+      </p>
+      <div class="meta-row">
+        <span class="chip y">Sole tracker</span>
+        <span class="chip">Phase 0 · active</span>
+        <span class="chip mute">G1 = MVP ship</span>
+        <span class="chip mute">No calendar estimates</span>
+      </div>
+      <p class="updated">Last updated · 2026-07-13 · Pi-philosophy alignment (acex-discover)</p>
+    </header>
+
+    <nav class="menu" aria-label="Sections">
+      <a href="#now">Now</a>
+      <a href="#pillars">Pillars</a>
+      <a href="#phases">Phases</a>
+      <a href="#matrix">Features</a>
+      <a href="#comments">Comments</a>
+      <a href="#artifacts">Artifacts</a>
+      <a href="#crates">Crates</a>
+      <a href="#flow">Flow</a>
+      <a href="#demo">Demo</a>
+      <a href="#cut">Cut</a>
+      <a href="#decisions">Decisions</a>
+      <a href="#changelog">Log</a>
+      <a href="#cheat">Cheat</a>
+    </nav>
+
+    <!-- NOW -->
+    <section id="now" class="box">
+      <div class="box-title"><span class="dot live"></span> Now · board status</div>
+      <div class="kpi">
+        <div class="cell"><div class="n">0✓</div><div class="l">Phase</div></div>
+        <div class="cell"><div class="n">G1</div><div class="l">Next gate</div></div>
+        <div class="cell"><div class="n">12+</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
+        <div class="cell"><div class="n">7</div><div class="l">Crates</div></div>
+        <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
+      </div>
+      <div class="say" style="margin-top:16px">
+        <span class="soul">♥</span>
+        <p style="margin:0">
+          <strong>Active work:</strong> Phase 1 control plane usable — board, filters, palette,
+          focus/peek/send/start/wait/zed/attach/worktrees via intent worker.
+          Polish remaining: richer start forms, wait timeouts, attach target CLI variants.
+        </p>
+      </div>
+      <h3>* Open blockers</h3>
+      <ul>
+        <li class="dim">Agent start argv freeform only (presets not yet config-backed).</li>
+        <li class="dim">Wait is non-blocking badge (no wall-clock timeout auto-clear).</li>
+        <li class="dim">Attach uses <code>herdr agent attach &lt;target&gt;</code>; session attach is separate palette item.</li>
+      </ul>
+    </section>
+
+    <!-- PILLARS -->
+    <section id="pillars" class="box">
+      <div class="box-title"><span class="dot"></span> Philosophy · four pillars</div>
+      <div class="grid-2">
+        <div>
+          <h3>* Extensibility</h3>
+          <p class="dim">Traits, adapters, registries. Editor bridge. Transport trait. Palette as registry (upcoming).</p>
+          <h3>* Platform-agnostic core</h3>
+          <p class="dim">Types + model compile everywhere. IO isolated. Unix-first delivery, not Unix-only design.</p>
+        </div>
+        <div>
+          <h3>* Performant agentic load</h3>
+          <p class="dim">Event reduce hot path. Non-blocking wait UX. Snapshot replace on reconnect only.</p>
+          <h3>* Observable parallel work</h3>
+          <p class="dim">Honest board. Peeks = cache. Herdr + FS = authority. Scannable states over nested chrome.</p>
+        </div>
+      </div>
+      <p class="dim">Full text: <code>SOUL.md</code> · gates: <code>GOAL.md</code> · agent ops: <code>AGENTS.md</code></p>
+    </section>
+
+    <!-- PHASES -->
+    <section id="phases" class="box">
+      <div class="box-title"><span class="dot live"></span> Build order · phases</div>
+
+      <div class="phase">
+        <h3>* Phase 0 — Skeleton + socket · DONE (G0)</h3>
+        <p class="dim">Features: F00–F05, F22, F23 · Gate <strong>G0 ✓</strong></p>
+        <p><span class="st st-done">done</span> scaffold · transport · ping/snapshot · subscribe · resnapshot</p>
+        <p><strong>Exit demo</strong></p>
+        <ol>
+          <li>No server → auto-spawn → connected</li>
+          <li>Snapshot shows workspace count</li>
+          <li>Create workspace in Herdr TUI → acex event without restart</li>
+          <li>Kill server → reconnect + resnapshot</li>
+        </ol>
+        <p class="muted">Parallel: types/schema · transport · UI shell</p>
+      </div>
+
+      <div class="phase gate active">
+        <h3>* Phase 1 — Agent control plane · MVP SHIP GATE (G1) · ACTIVE</h3>
+        <p class="dim">Features: F06–F12, F14, F17, F20, F25</p>
+        <p><span class="st st-doing">doing</span> core board/palette/actions in · polish + full demo script</p>
+      </div>
+
+      <div class="phase">
+        <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5)</h3>
+        <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
+        <p><span class="st st-todo">todo</span></p>
+      </div>
+
+      <div class="phase post">
+        <h3>* Phase 2 — Post-MVP (G2)</h3>
+        <p class="dim">F23, F24, multi-session, richer ANSI, plugins — not required for “usable.”</p>
+        <p><span class="st st-todo">todo</span></p>
+      </div>
+    </section>
+
+    <!-- MATRIX -->
+    <section id="matrix" class="box">
+      <div class="box-title"><span class="dot"></span> Feature matrix · living</div>
+      <div class="legend">
+        <span><span class="st st-todo">todo</span></span>
+        <span><span class="st st-doing">doing</span></span>
+        <span><span class="st st-blocked">blocked</span></span>
+        <span><span class="st st-review">review</span></span>
+        <span><span class="st st-done">done</span></span>
+        <span><span class="st st-cut">cut</span></span>
+        <span class="muted">Effort S/M/L = relative size</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Status</th><th>Feature</th><th>Pri</th><th>Ph</th>
+              <th>Herdr / Zed</th><th>Acceptance</th><th>E</th><th>Deps</th><th>Risks / notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>F00</td><td><span class="st st-done">done</span></td>
+              <td>Workspace scaffold</td><td class="pri-p0">P0</td><td>0</td>
+              <td>—</td><td>Starts/draws/exits</td>
+              <td><span class="badge s">S</span></td><td>—</td>
+              <td>cargo workspace + acex shell UI; q quits</td>
+            </tr>
+            <tr>
+              <td>F01</td><td><span class="st st-done">done</span></td>
+              <td>Connect/reconnect</td><td class="pri-p0">P0</td><td>0</td>
+              <td>resolve → ping; spawn if missing</td>
+              <td>Auto-spawn + pong; reconnect on drop</td>
+              <td><span class="badge m">M</span></td><td>F00</td>
+              <td>Win named pipe + Unix UDS; unary reconnect-per-call; long-lived reconnect = F04</td>
+            </tr>
+            <tr>
+              <td>F02</td><td><span class="st st-done">done</span></td>
+              <td>Session bootstrap</td><td class="pri-p0">P0</td><td>0</td>
+              <td>session.snapshot</td><td>Model filled</td>
+              <td><span class="badge s">S</span></td><td>F01</td><td>Envelope unwrap; applied in acex main / --smoke</td>
+            </tr>
+            <tr>
+              <td>F03</td><td><span class="st st-done">done</span></td>
+              <td>Event loop</td><td class="pri-p0">P0</td><td>0</td>
+              <td>events.subscribe</td><td>External changes update board</td>
+              <td><span class="badge m">M</span></td><td>F02</td>
+              <td>Long-lived stream; live●; reduce lifecycle + agent status; smoke drains backlog</td>
+            </tr>
+            <tr>
+              <td>F04</td><td><span class="st st-done">done</span></td>
+              <td>Resnapshot</td><td class="pri-p0">P0</td><td>0</td>
+              <td>reconnect → snapshot → sub</td><td>Kill server → resync</td>
+              <td><span class="badge s">S</span></td><td>F01–03</td>
+              <td>resync_with_backoff + apply_resnapshot; --smoke-reconnect green</td>
+            </tr>
+            <tr>
+              <td>F05</td><td><span class="st st-done">done</span></td>
+              <td>Error/empty states</td><td class="pri-p0">P0</td><td>0</td>
+              <td>error {code,message}</td><td>Offline CTA; API errors</td>
+              <td><span class="badge s">S</span></td><td>F01</td><td>Offline CTA + last_error + status_note in UI</td>
+            </tr>
+            <tr>
+              <td>F06</td><td><span class="st st-done">done</span></td>
+              <td>Agent board</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent.list/get; status events</td><td>Live states</td>
+              <td><span class="badge m">M</span></td><td>F02–03</td>
+              <td>Selectable board; pane-derived + agent.list merge</td>
+            </tr>
+            <tr>
+              <td>F07</td><td><span class="st st-done">done</span></td>
+              <td>Focus agent</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent.focus</td><td>Herdr focus matches</td>
+              <td><span class="badge s">S</span></td><td>F06</td><td>Enter / f / palette</td>
+            </tr>
+            <tr>
+              <td>F08</td><td><span class="st st-done">done</span></td>
+              <td>Output peek</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent/pane.read</td><td>≥40 lines; r refresh</td>
+              <td><span class="badge m">M</span></td><td>F06</td><td>Detail pane; strip_ansi</td>
+            </tr>
+            <tr>
+              <td>F09</td><td><span class="st st-done">done</span></td>
+              <td>Start agent</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent.start</td><td>Appears on board</td>
+              <td><span class="badge m">M</span></td><td>F06,F14</td><td>Freeform name|argv</td>
+            </tr>
+            <tr>
+              <td>F10</td><td><span class="st st-done">done</span></td>
+              <td>Send to agent</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent.send</td><td>Visible in peek</td>
+              <td><span class="badge s">S</span></td><td>F06</td><td>s / palette + auto peek</td>
+            </tr>
+            <tr>
+              <td>F11</td><td><span class="st st-done">done</span></td>
+              <td>Wait status</td><td class="pri-p0">P0</td><td>1</td>
+              <td>wait / status events</td><td>Resolves or times out</td>
+              <td><span class="badge s">S</span></td><td>F06</td><td>Non-blocking badges; event resolve</td>
+            </tr>
+            <tr>
+              <td>F12</td><td><span class="st st-done">done</span></td>
+              <td>Worktree list</td><td class="pri-p0">P0</td><td>1</td>
+              <td>worktree.list</td><td>Paths/branches</td>
+              <td><span class="badge s">S</span></td><td>F02</td><td>t / palette</td>
+            </tr>
+            <tr>
+              <td>F13</td><td><span class="st st-todo">todo</span></td>
+              <td>Worktree CRUD</td><td class="pri-p0">P0</td><td>1.5</td>
+              <td>create/open/remove + zed</td><td>CRUD; force flagged</td>
+              <td><span class="badge m">M</span></td><td>F12</td><td></td>
+            </tr>
+            <tr>
+              <td>F14</td><td><span class="st st-done">done</span></td>
+              <td>Command palette</td><td class="pri-p0">P0</td><td>1</td>
+              <td>routes methods + Zed</td><td>Ctrl+K / p</td>
+              <td><span class="badge m">M</span></td><td>F01+</td><td>Fuzzy palette registry</td>
+            </tr>
+            <tr>
+              <td>F15</td><td><span class="st st-todo">todo</span></td>
+              <td>Pane run</td><td class="pri-p1">P1</td><td>1.5</td>
+              <td>herdr pane run</td><td>Peek updates</td>
+              <td><span class="badge s">S</span></td><td>F08</td><td></td>
+            </tr>
+            <tr>
+              <td>F16</td><td><span class="st st-done">done</span></td>
+              <td>Notification</td><td class="pri-p1">P1</td><td>1.5</td>
+              <td>notification.show</td><td>rate_limited ok</td>
+              <td><span class="badge s">S</span></td><td>F01</td><td>palette notify form</td>
+            </tr>
+            <tr>
+              <td>F17</td><td><span class="st st-done">done</span></td>
+              <td>Open in Zed</td><td class="pri-p0">P0</td><td>1</td>
+              <td>zed / -n</td><td>PATH error clear</td>
+              <td><span class="badge s">S</span></td><td>F06/F12</td><td>z / palette; cwd from agent</td>
+            </tr>
+            <tr>
+              <td>F18</td><td><span class="st st-todo">todo</span></td>
+              <td>Diff in Zed</td><td class="pri-p1">P1</td><td>1.5</td>
+              <td>zed --diff</td><td>Files exist</td>
+              <td><span class="badge s">S</span></td><td>F17</td><td>API on ZedBridge ready</td>
+            </tr>
+            <tr>
+              <td>F19</td><td><span class="st st-todo">todo</span></td>
+              <td>Layout presets</td><td class="pri-p1">P1</td><td>1.5</td>
+              <td>layout.apply</td><td>Warn new tab / no live PTY</td>
+              <td><span class="badge m">M</span></td><td>F02</td><td></td>
+            </tr>
+            <tr>
+              <td>F20</td><td><span class="st st-done">done</span></td>
+              <td>Attach in Herdr</td><td class="pri-p0">P0</td><td>1</td>
+              <td>agent attach / session</td><td>External TUI; acex stays up</td>
+              <td><span class="badge s">S</span></td><td>F01</td><td>a / palette</td>
+            </tr>
+            <tr>
+              <td>F21</td><td><span class="st st-todo">todo</span></td>
+              <td>Paths chrome</td><td class="pri-p1">P1</td><td>1.5</td>
+              <td>snapshot cwds</td><td>RO list → Zed</td>
+              <td><span class="badge s">S</span></td><td>F17</td><td></td>
+            </tr>
+            <tr>
+              <td>F22</td><td><span class="st st-done">done</span></td>
+              <td>Schema bootstrap</td><td class="pri-p1">P1</td><td>0–1</td>
+              <td>herdr api schema --json</td><td>Unknown fields ignored</td>
+              <td><span class="badge s">S</span></td><td>—</td>
+              <td>schema artifact protocol 16; refresh on Herdr upgrade</td>
+            </tr>
+            <tr>
+              <td>F23</td><td><span class="st st-done">done</span></td>
+              <td>Windows pipes</td><td class="pri-p2">P2</td><td>0</td>
+              <td>named pipe transport</td><td>No fake support</td>
+              <td><span class="badge m">M</span></td><td>F01</td>
+              <td>Pulled into Phase 0 · <code>\\.\pipe\{abs path}</code> · live E2E</td>
+            </tr>
+            <tr>
+              <td>F24</td><td><span class="st st-cut">cut</span></td>
+              <td>Live frame peek</td><td class="pri-p2">P2</td><td>2</td>
+              <td>terminal.session.observe</td><td>Out of MVP</td>
+              <td><span class="badge l">L</span></td><td>F08</td><td>SOUL refusal of frame streaming as primary</td>
+            </tr>
+            <tr>
+              <td>F25</td><td><span class="st st-done">done</span></td>
+              <td>Filter board</td><td class="pri-p1">P1</td><td>1</td>
+              <td>client-side</td><td>Sticky filter + counts</td>
+              <td><span class="badge s">S</span></td><td>F06</td><td>1–5 / keys</td>
+            </tr>
+            <tr>
+              <td>F26</td><td><span class="st st-todo">todo</span></td>
+              <td>Workspace focus</td><td class="pri-p1">P1</td><td>1.5</td>
+              <td>workspace.list/focus</td><td>Board scopes</td>
+              <td><span class="badge s">S</span></td><td>F02</td><td></td>
+            </tr>
+            <tr>
+              <td>F27</td><td><span class="st st-done">done</span></td>
+              <td>Project soul docs</td><td class="pri-p0">P0</td><td>0</td>
+              <td>—</td><td>SOUL/GOAL/AGENTS present</td>
+              <td><span class="badge s">S</span></td><td>—</td>
+              <td>Agentic self-awareness foundation</td>
+            </tr>
+            <tr>
+              <td>F28</td><td><span class="st st-done">done</span></td>
+              <td>Living tracker</td><td class="pri-p0">P0</td><td>0</td>
+              <td>—</td><td>Sole tracker HTML</td>
+              <td><span class="badge s">S</span></td><td>—</td>
+              <td>This page; update on every meaningful change</td>
+            </tr>
+            <tr>
+              <td>F29</td><td><span class="st st-done">done</span></td>
+              <td>Action registry</td><td class="pri-p1">P1</td><td>1</td>
+              <td>extensibility spine</td><td>Palette + Intent enum</td>
+              <td><span class="badge m">M</span></td><td>F14</td><td>palette.rs + Intent worker</td>
+            </tr>
+            <tr>
+              <td>F30</td><td><span class="st st-doing">doing</span></td>
+              <td>Observability surface</td><td class="pri-p1">P1</td><td>1</td>
+              <td>board metrics + ages</td><td>Parallel agents scannable</td>
+              <td><span class="badge m">M</span></td><td>F06</td><td>counts/events/waits; ages later</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COMMENTS -->
+    <section id="comments" class="box">
+      <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · pi-align · agent</div>
+        <p style="margin:0">
+          Mapped <a href="https://github.com/earendil-works/pi">earendil-works/pi</a> self-extensible
+          philosophy → Rust: <code>docs/PHILOSOPHY_PI.md</code>, crate <code>acex-discover</code>
+          (manifest scan, progressive name/description), drop-in
+          <code>packages/*/acex-package.toml</code>, machine <code>--status</code> JSON.
+          Explicit non-ports: jiti, LLM agent-core, npm install.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · production · agent</div>
+        <p style="margin:0">
+          Agent-first maintainability: <code>docs/ARCHITECTURE.md</code>, <code>EXTENDING.md</code>,
+          <code>VERIFY.md</code>, <code>docs/biographies/*</code>, skill <code>skills/acex-dev</code>.
+          Hygiene: <code>fmt --check</code>, <code>clippy -D warnings</code>, dual <code>cargo test</code>,
+          dual <code>--smoke</code> (<code>conn=Live</code>). Poison-safe store locks. Expanded unit tests
+          on shipped model/client paths.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · Phase 1 · agent</div>
+        <p style="margin:0">
+          Board + detail + Ctrl+K palette. Intents via mpsc → async worker (unary Herdr RPC).
+          Keys: j/k select, f focus, r peek, s send, w/b wait, a attach, z zed, t worktrees,
+          1–5 filter, / search. Start form: <code>name|cmd args</code>.
+          Smoke peeks selected pane. F15/F16/F18/F19 still 1.5.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · F04 / G0 · agent</div>
+        <p style="margin:0">
+          On stream drop: <code>mark_reconnecting</code> → <code>resync_with_backoff</code>
+          (ping + session.snapshot, optional spawn) → <code>apply_resnapshot</code> (full replace,
+          bump <code>snapshot_gen</code>/<code>reconnect_count</code>) → resubscribe with fresh pane ids.
+          Smoke: <code>acex --smoke-reconnect</code> → stop server → respawn →
+          <code>reconnects=1 snap_gen=2</code>. G0 closed; Phase 1 next.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · F03 · agent</div>
+        <p style="margin:0">
+          <code>events.subscribe</code> live. Subscribe types use dotted names; push uses
+          <code>{event, data}</code> with underscores. Ack = <code>subscription_started</code>.
+          Scoped status needs <code>pane_id</code>. Unary stays connect-per-call.
+          UI: shared <code>Arc&lt;Mutex&lt;Store&gt;&gt;</code>, header <code>live●</code>, recent events list.
+          Smoke: <code>sub=true events=15</code> after backlog drain on Win.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · transport · agent</div>
+        <p style="margin:0">
+          <strong>Cross-OS Herdr IPC:</strong> Unix = UDS at config path.
+          Windows = named pipe <code>\\.\pipe\{absolute herdr.sock path}</code>
+          (Herdr/interprocess convention; sock file is a pid:token marker, not a real socket file).
+          Unary RPC = connect-per-call (pipe closes after each response).
+          Always send <code>params:{}</code>. Snapshot envelope is
+          <code>{type, snapshot:{…}}</code>. Verified: <code>acex --smoke</code> + <code>HERDR_E2E=1</code> on Windows.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · scaffold · agent</div>
+        <p style="margin:0">
+          Named product <strong>acex</strong>. Established SOUL/GOAL/AGENTS. Tracker is sole planning memory.
+          Pillars encoded: extensibility, platform-agnostic core, performance under agentic load,
+          interpretable observability. Herdr schema protocol <strong>16</strong> frozen as artifact.
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · architecture · agent</div>
+        <p style="margin:0">
+          <code>Transport</code> trait + <code>MockTransport</code> + <code>PlatformTransport</code> (Unix).
+          <code>EditorBridge</code> + <code>ZedBridge</code>. Model reducers stubbed.
+          Binary currently shows shell only — intentional vertical slice order (UI before live socket on Win host).
+        </p>
+      </div>
+
+      <div class="comment">
+        <div class="meta"><span class="tag">2026-07-13</span> · risk · agent</div>
+        <p style="margin:0">
+          Confirm NDJSON request/response framing against a live Herdr socket before locking F01.
+          Prefer integration test behind <code>#[cfg(unix)]</code> with optional <code>HERDR_E2E=1</code>.
+        </p>
+      </div>
+
+      <p class="muted">Agents: prepend new comments at the top. Tag with date · topic · actor.</p>
+    </section>
+
+    <!-- ARTIFACTS -->
+    <section id="artifacts" class="box">
+      <div class="box-title"><span class="dot"></span> Artifacts</div>
+      <div class="table-scroll">
+        <table style="min-width:480px">
+          <thead><tr><th>Artifact</th><th>Path</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Soul</td>
+              <td><code>SOUL.md</code></td>
+              <td>Identity + hard refusals</td>
+            </tr>
+            <tr>
+              <td>Goal</td>
+              <td><code>GOAL.md</code></td>
+              <td>Gates G0 / G1 / G1.5 / G2</td>
+            </tr>
+            <tr>
+              <td>Agents ops</td>
+              <td><code>AGENTS.md</code></td>
+              <td>How to work this repo</td>
+            </tr>
+            <tr>
+              <td>Tracker (this)</td>
+              <td><code>docs/tracker.html</code></td>
+              <td>Sole living tracker</td>
+            </tr>
+            <tr>
+              <td>Herdr API schema</td>
+              <td><code>crates/herdr-types/schemas/herdr-api.schema.json</code></td>
+              <td>protocol 16 · from <code>herdr api schema --json</code></td>
+            </tr>
+            <tr>
+              <td>Cargo workspace</td>
+              <td><code>Cargo.toml</code> + <code>crates/*</code></td>
+              <td>7 crates · check/test green</td>
+            </tr>
+            <tr>
+              <td>Binary shell</td>
+              <td><code>cargo run -p acex</code></td>
+              <td>q to quit · offline banner</td>
+            </tr>
+            <tr>
+              <td>Smoke path</td>
+              <td><code>cargo run -p acex -- --smoke</code></td>
+              <td>connect+snapshot+brief subscribe</td>
+            </tr>
+            <tr>
+              <td>F04 smoke</td>
+              <td><code>cargo run -p acex -- --smoke-reconnect</code></td>
+              <td>server stop → resync → resub</td>
+            </tr>
+            <tr>
+              <td>Live client E2E</td>
+              <td><code>HERDR_E2E=1 cargo test -p herdr-client --test live_herdr</code></td>
+              <td>optional; needs herdr on PATH</td>
+            </tr>
+            <tr>
+              <td>Win pipe convention</td>
+              <td><code>\\.\pipe\{AppData\Roaming\herdr\herdr.sock}</code></td>
+              <td>documented in herdr-client transport</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CRATES -->
+    <section id="crates" class="box">
+      <div class="box-title"><span class="dot"></span> Crate map</div>
+      <div class="table-scroll">
+        <table style="min-width:480px">
+          <thead><tr><th>Crate</th><th>Owns</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><code>herdr-types</code></td><td>NDJSON models; forward-compat serde</td><td><span class="st st-doing">doing</span></td></tr>
+            <tr><td><code>herdr-client</code></td><td>Transport (UDS+pipe), resolve, RPC, spawn</td><td><span class="st st-done">done</span> unary</td></tr>
+            <tr><td><code>acex-model</code></td><td>Store, reducers, filters</td><td><span class="st st-doing">doing</span></td></tr>
+            <tr><td><code>acex-ui</code></td><td>ratatui only</td><td><span class="st st-doing">doing</span></td></tr>
+            <tr><td><code>acex-editor</code></td><td>EditorBridge + Zed</td><td><span class="st st-doing">doing</span></td></tr>
+            <tr><td><code>acex-config</code></td><td>env + defaults</td><td><span class="st st-doing">doing</span></td></tr>
+            <tr><td><code>acex</code> (bin)</td><td>Compose loop</td><td><span class="st st-doing">doing</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="say">
+        <span class="soul">♥</span>
+        <p style="margin:0">
+          Only <code>herdr-client</code> talks NDJSON · only editor bridge spawns editor · only <code>acex-ui</code> draws · never <code>server.stop</code> on quit.
+        </p>
+      </div>
+    </section>
+
+    <!-- FLOW -->
+    <section id="flow" class="box">
+      <div class="box-title"><span class="dot"></span> Event loop &amp; data flow</div>
+      <pre><span class="w">acex</span> ──connect──▶ <span class="w">herdr-client</span> ──NDJSON──▶ <span class="y">Herdr server</span>
+  │                      │
+  │                 ping / session.snapshot
+  │                 events.subscribe (long-lived)
+  │                 unary agent.* / worktree.* / layout.*
+  ▼                      │
+<span class="w">acex-ui</span> ◀──render── <span class="w">acex-model</span> (reduce events)
+  │
+  └── acex-editor ──▶ zed
+  └── handoff ──▶ herdr attach</pre>
+      <ul>
+        <li><strong>Bootstrap:</strong> connect → ping → snapshot → subscribe → draw</li>
+        <li><strong>Steady:</strong> events → reduce → draw; UI → request(id) → model</li>
+        <li><strong>Reconnect:</strong> drop sub → backoff → snapshot replace → resubscribe</li>
+        <li>Peek buffers are never authority.</li>
+      </ul>
+    </section>
+
+    <!-- DEMO -->
+    <section id="demo" class="box">
+      <div class="box-title"><span class="dot"></span> Demo script (G1 / G1.5)</div>
+      <p class="dim">Prereqs: <code>herdr</code>, <code>zed</code> on PATH; repo <code>~/proj</code>; binary <code>acex</code>.</p>
+      <ol>
+        <li>Stop any default session if needed</li>
+        <li>Launch <code>acex</code> from project → auto-connect</li>
+        <li>Empty board → CTA visible</li>
+        <li>Palette → Start agent</li>
+        <li>Board shows agent; state updates</li>
+        <li>Select → peek recent output</li>
+        <li>Send text → peek refresh</li>
+        <li>Wait until done/blocked (timeout OK)</li>
+        <li>Open in Zed on workspace cwd</li>
+        <li>Attach in Herdr → detach; acex still live</li>
+        <li>Kill server → reconnect → board restored</li>
+        <li>(1.5) Worktree create → list → open in Zed</li>
+        <li>(1.5) Layout preset → no live PTY warning → new tab</li>
+        <li>(1.5) Diff via <code>zed --diff</code></li>
+        <li>Quit acex; leave server running</li>
+      </ol>
+    </section>
+
+    <div class="grid-2">
+      <section id="cut" class="box">
+        <div class="box-title"><span class="dot"></span> Cut list</div>
+        <div class="table-scroll">
+          <table style="min-width:280px">
+            <thead><tr><th>Deferred</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>libghostty / embed term</td><td>Attach handoff</td></tr>
+              <tr><td>Live terminal.session.observe</td><td>Duplicates Herdr TUI</td></tr>
+              <tr><td>Plugin marketplace UI</td><td>Not control plane</td></tr>
+              <tr><td>Multi-session chrome</td><td>One session first</td></tr>
+              <tr><td>Cloud CP</td><td>Local socket product</td></tr>
+              <tr><td>Full git/file UI</td><td>FS + Zed</td></tr>
+              <tr><td>In-place layout keep PTYs</td><td>layout.apply contract</td></tr>
+              <tr><td>Windows-first pipes</td><td>Phase 2 / F23</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="decisions" class="box">
+        <div class="box-title"><span class="dot"></span> Decisions</div>
+        <div class="table-scroll">
+          <table style="min-width:280px">
+            <thead><tr><th>#</th><th>Decision</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Leave server on exit?</td><td>Yes — never server.stop</td></tr>
+              <tr><td>2</td><td>Zed open mode</td><td>zed &lt;path&gt;; palette -n/-a</td></tr>
+              <tr><td>3</td><td>Agent start templates</td><td>Freeform + 2–3 presets</td></tr>
+              <tr><td>4</td><td>Board scope</td><td>All agents; workspace filter</td></tr>
+              <tr><td>5</td><td>Peek source</td><td>recent lines=80</td></tr>
+              <tr><td>6</td><td>Layout presets</td><td>User config + project override</td></tr>
+              <tr><td>7</td><td>Windows</td><td>Unix UI delivery first; core portable</td></tr>
+              <tr><td>8</td><td>Wait UX</td><td>Non-blocking badge + palette wait</td></tr>
+              <tr><td>9</td><td>Project name</td><td><strong>acex</strong></td></tr>
+              <tr><td>10</td><td>Sole tracker</td><td><code>docs/tracker.html</code></td></tr>
+              <tr><td>11</td><td>Self-awareness</td><td>SOUL + GOAL + tracker mandatory</td></tr>
+              <tr><td>12</td><td>Windows IPC</td><td>Named pipe <code>\\.\pipe\{abs sock path}</code>; F23 pulled to Phase 0</td></tr>
+              <tr><td>13</td><td>Unary RPC</td><td>Connect-per-call; subscribe uses separate long-lived stream</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- CHANGELOG -->
+    <section id="changelog" class="box">
+      <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
+      <ul>
+        <li><strong>2026-07-13</strong> — Pi alignment: PHILOSOPHY_PI.md, acex-discover, --status JSON, example package, skill discovery (no TS loaders).</li>
+        <li><strong>2026-07-13</strong> — Production-ready pass: agent doc graph, biographies, acex-dev skill, fmt/clippy gates, poison-safe locks, expanded shipped-function tests.</li>
+        <li><strong>2026-07-13</strong> — Phase 1 core: board/filters/palette/focus/peek/send/start/wait/zed/attach/worktrees. G1 polish remains.</li>
+        <li><strong>2026-07-13</strong> — F04 complete + G0 closed. <code>--smoke-reconnect</code>.</li>
+        <li><strong>2026-07-13</strong> — F03: EventSubscription, model reducers, live TUI loop, live E2E subscribe.</li>
+        <li><strong>2026-07-13</strong> — Windows named-pipe transport + Unix UDS; connect/ping/snapshot in binary; <code>--smoke</code>; live E2E. F01/F02/F05/F22/F23 done.</li>
+        <li><strong>2026-07-13</strong> — Initial scaffold: workspace, philosophy docs, tracker, schema artifact, shell UI. F00/F27/F28 done. Added F29 action registry, F30 observability surface.</li>
+      </ul>
+      <p class="muted">Append-only. Code commits that change intent must add a line here.</p>
+    </section>
+
+    <!-- CHEAT -->
+    <section id="cheat" class="box">
+      <div class="box-title"><span class="dot"></span> MVP cheat sheet</div>
+      <div class="table-scroll">
+        <table style="min-width:420px">
+          <thead><tr><th>Intent</th><th>Prefer</th></tr></thead>
+          <tbody>
+            <tr><td>Bootstrap</td><td><code>session.snapshot</code></td></tr>
+            <tr><td>Live</td><td><code>events.subscribe</code></td></tr>
+            <tr><td>Health</td><td><code>ping</code> / <code>herdr status</code></td></tr>
+            <tr><td>Agents</td><td><code>agent.list/get/read/send/focus/start</code></td></tr>
+            <tr><td>Wait</td><td><code>herdr wait agent-status</code></td></tr>
+            <tr><td>Peek/run</td><td><code>pane.read</code>, <code>herdr pane run</code></td></tr>
+            <tr><td>Worktrees</td><td><code>worktree.*</code></td></tr>
+            <tr><td>Layouts</td><td><code>layout.apply</code> (new tab; no live PTY)</td></tr>
+            <tr><td>Toast</td><td><code>notification.show</code></td></tr>
+            <tr><td>Terminals</td><td><code>herdr</code> / attach</td></tr>
+            <tr><td>Editor</td><td><code>zed</code>, <code>-n</code>, <code>-a</code>, <code>--diff</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dim" style="margin-top:12px">
+        Sockets: <code>~/.config/herdr/herdr.sock</code> ·
+        <code>…/sessions/&lt;name&gt;/herdr.sock</code> ·
+        <code>HERDR_SOCKET_PATH</code> / <code>HERDR_SESSION</code>
+      </p>
+    </section>
+
+    <!-- HOW TO UPDATE -->
+    <section id="howto" class="box">
+      <div class="box-title"><span class="dot"></span> How agents update this tracker</div>
+      <ol>
+        <li>Change status badges on features/crates/phases.</li>
+        <li>Prepend a <strong>Comment</strong> with date · topic · actor.</li>
+        <li>Add <strong>Artifacts</strong> rows for new durable files.</li>
+        <li>Append <strong>Changelog</strong> line.</li>
+        <li>Bump “Last updated” in the hero.</li>
+        <li>If philosophy shifts → edit SOUL/GOAL and Decision row.</li>
+      </ol>
+      <p class="dim">No other planning doc replaces this page. Chat is not memory.</p>
+    </section>
+
+    <footer>
+      <div class="fight-bar" aria-label="Ship status">
+        <span>PHASE 0 ✓</span>
+        <span class="active">* SHIP · G1</span>
+        <span>SHIP+ · G1.5</span>
+        <span>POST · G2</span>
+      </div>
+      <p class="foot-note">
+        acex · self-aware control plane · keep the board honest
+      </p>
+    </footer>
+
+  </div>
+</body>
+</html>

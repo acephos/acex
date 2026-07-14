@@ -1,0 +1,17 @@
+[package]
+name = "herdr-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Herdr NDJSON client: transport, reconnect, snapshot, subscribe"
+
+[dependencies]
+herdr-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+dirs = { workspace = true }
+uuid = { workspace = true }

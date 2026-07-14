@@ -1,0 +1,11 @@
+[package]
+name = "acex-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "acex session store, reducers, filters, waiters"
+
+[dependencies]
+herdr-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

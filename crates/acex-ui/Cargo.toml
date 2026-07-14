@@ -1,0 +1,12 @@
+[package]
+name = "acex-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ratatui views for acex — only crate that draws"
+
+[dependencies]
+acex-model = { workspace = true }
+herdr-types = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }

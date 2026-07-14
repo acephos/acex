@@ -1,0 +1,10 @@
+[package]
+name = "acex-editor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Editor bridge trait + Zed adapter for acex"
+
+[dependencies]
+thiserror = { workspace = true }
+async-trait = { workspace = true }

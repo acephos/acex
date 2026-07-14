@@ -1,0 +1,15 @@
+[package]
+name = "acex-discover"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pure filesystem discovery of acex packages and skills (Pi-like progressive disclosure)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+toml = "0.8"
+
+[dev-dependencies]
+tempfile = "3"

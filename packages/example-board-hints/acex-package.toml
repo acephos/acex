@@ -1,0 +1,21 @@
+# Example drop-in package (Pi-like progressive discovery).
+# Discovered by acex-discover from packages/*/acex-package.toml
+# Actions map to existing Intent variants — no dynamic code load.
+
+name = "example-board-hints"
+description = "Example package: documents board shortcuts and maps to FocusSelected intent metadata."
+version = "0.1.0"
+
+[[actions]]
+id = "focus"
+label = "Focus selected agent"
+keywords = ["focus", "f"]
+intent = "FocusSelected"
+
+[[actions]]
+id = "peek"
+label = "Peek selected output"
+keywords = ["peek", "read"]
+intent = "PeekSelected"
+
+skills = []

@@ -1,0 +1,572 @@
+//! ratatui shell for acex. Only this crate draws.
+
+mod palette;
+
+use acex_model::{AgentState, ConnState, Intent, Store};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use crossterm::ExecutableCommand;
+use palette::{Palette, PaletteAction};
+use ratatui::backend::CrosstermBackend;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap};
+use ratatui::Terminal;
+use std::io::{self, stdout};
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+#[derive(Debug, Clone, Default)]
+enum Mode {
+    #[default]
+    Board,
+    Palette,
+    /// Freeform text input; on submit maps to intent builder.
+    Input {
+        title: String,
+        buffer: String,
+        kind: InputKind,
+    },
+}
+
+#[derive(Debug, Clone)]
+enum InputKind {
+    Send,
+    StartAgent,
+    FilterQuery,
+    Notify,
+}
+
+pub struct App {
+    pub store: Arc<Mutex<Store>>,
+    pub should_quit: bool,
+    mode: Mode,
+    palette: Palette,
+    intent_tx: Option<Sender<Intent>>,
+    status_flash: Option<String>,
+}
+
+impl App {
+    pub fn with_shared(store: Arc<Mutex<Store>>, intent_tx: Sender<Intent>) -> Self {
+        Self {
+            store,
+            should_quit: false,
+            mode: Mode::Board,
+            palette: Palette::new(),
+            intent_tx: Some(intent_tx),
+            status_flash: None,
+        }
+    }
+
+    pub fn store_handle(&self) -> Arc<Mutex<Store>> {
+        Arc::clone(&self.store)
+    }
+
+    fn send_intent(&mut self, intent: Intent) {
+        if let Some(tx) = &self.intent_tx {
+            if tx.send(intent).is_err() {
+                self.status_flash = Some("intent channel closed".into());
+            }
+        }
+    }
+}
+
+pub fn run(mut app: App) -> io::Result<()> {
+    enable_raw_mode()?;
+    stdout().execute(EnterAlternateScreen)?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+
+    {
+        let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+        s.ensure_selection();
+    }
+
+    let result = loop {
+        {
+            let store = app.store.lock().unwrap_or_else(|e| e.into_inner());
+            terminal.draw(|f| draw(f, &store, &app))?;
+        }
+
+        if event::poll(Duration::from_millis(80))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    handle_key(&mut app, key.code, key.modifiers);
+                }
+            }
+        }
+
+        if app.should_quit {
+            break Ok(());
+        }
+    };
+
+    disable_raw_mode()?;
+    stdout().execute(LeaveAlternateScreen)?;
+    result
+}
+
+fn handle_key(app: &mut App, code: KeyCode, mods: KeyModifiers) {
+    match &app.mode {
+        Mode::Palette => match code {
+            KeyCode::Esc => app.mode = Mode::Board,
+            KeyCode::Char('q') if mods.is_empty() => app.mode = Mode::Board,
+            KeyCode::Up | KeyCode::Char('k') => app.palette.move_sel(-1),
+            KeyCode::Down | KeyCode::Char('j') => app.palette.move_sel(1),
+            KeyCode::Backspace => app.palette.backspace(),
+            KeyCode::Enter => {
+                if let Some(action) = app.palette.selected_action() {
+                    apply_palette_action(app, action);
+                }
+            }
+            KeyCode::Char(c) if !mods.contains(KeyModifiers::CONTROL) => {
+                app.palette.push_char(c);
+            }
+            _ => {}
+        },
+        Mode::Input { .. } => match code {
+            KeyCode::Esc => app.mode = Mode::Board,
+            KeyCode::Enter => submit_input(app),
+            KeyCode::Backspace => {
+                if let Mode::Input { buffer, .. } = &mut app.mode {
+                    buffer.pop();
+                }
+            }
+            KeyCode::Char(c) if !mods.contains(KeyModifiers::CONTROL) => {
+                if let Mode::Input { buffer, .. } = &mut app.mode {
+                    buffer.push(c);
+                }
+            }
+            _ => {}
+        },
+        Mode::Board => {
+            if mods.contains(KeyModifiers::CONTROL)
+                && matches!(code, KeyCode::Char('k') | KeyCode::Char('K'))
+            {
+                app.palette.reset();
+                app.mode = Mode::Palette;
+                return;
+            }
+            match code {
+                KeyCode::Char('q') | KeyCode::Esc => app.should_quit = true,
+                KeyCode::Up | KeyCode::Char('k') => {
+                    let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+                    s.select_delta(-1);
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+                    s.select_delta(1);
+                }
+                KeyCode::Char('f') | KeyCode::Enter => app.send_intent(Intent::FocusSelected),
+                KeyCode::Char('r') => app.send_intent(Intent::PeekSelected),
+                KeyCode::Char('s') => {
+                    app.mode = Mode::Input {
+                        title: "send to selected agent".into(),
+                        buffer: String::new(),
+                        kind: InputKind::Send,
+                    };
+                }
+                KeyCode::Char('w') => {
+                    app.send_intent(Intent::WaitSelected {
+                        status: AgentState::Done,
+                    });
+                }
+                KeyCode::Char('b') => {
+                    app.send_intent(Intent::WaitSelected {
+                        status: AgentState::Blocked,
+                    });
+                }
+                KeyCode::Char('a') => app.send_intent(Intent::AttachSelected),
+                KeyCode::Char('z') => app.send_intent(Intent::OpenZed {
+                    path: None,
+                    mode: acex_model::ZedOpenMode::Default,
+                }),
+                KeyCode::Char('t') => app.send_intent(Intent::WorktreeList),
+                KeyCode::Char('R') => app.send_intent(Intent::Resnapshot),
+                KeyCode::Char('A') => app.send_intent(Intent::RefreshAgents),
+                KeyCode::Char('/') => {
+                    app.mode = Mode::Input {
+                        title: "filter query".into(),
+                        buffer: String::new(),
+                        kind: InputKind::FilterQuery,
+                    };
+                }
+                KeyCode::Char('1') => set_filter(app, None),
+                KeyCode::Char('2') => set_filter(app, Some(AgentState::Idle)),
+                KeyCode::Char('3') => set_filter(app, Some(AgentState::Working)),
+                KeyCode::Char('4') => set_filter(app, Some(AgentState::Blocked)),
+                KeyCode::Char('5') => set_filter(app, Some(AgentState::Done)),
+                KeyCode::Char('0') => {
+                    let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+                    s.cycle_filter_state();
+                }
+                KeyCode::Char('p') | KeyCode::Char(' ') => {
+                    app.palette.reset();
+                    app.mode = Mode::Palette;
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+fn set_filter(app: &mut App, state: Option<AgentState>) {
+    let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+    s.set_filter_state(state);
+}
+
+fn submit_input(app: &mut App) {
+    let mode = std::mem::replace(&mut app.mode, Mode::Board);
+    if let Mode::Input { buffer, kind, .. } = mode {
+        match kind {
+            InputKind::Send => {
+                if !buffer.is_empty() {
+                    app.send_intent(Intent::SendSelected { text: buffer });
+                }
+            }
+            InputKind::StartAgent => {
+                // format: name | cmd arg1 arg2   OR just cmd
+                let (name, argv) = parse_start(&buffer);
+                if !argv.is_empty() {
+                    app.send_intent(Intent::StartAgent {
+                        name,
+                        argv,
+                        cwd: None,
+                    });
+                }
+            }
+            InputKind::FilterQuery => {
+                let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+                s.filter.query = buffer;
+                s.ensure_selection();
+            }
+            InputKind::Notify => {
+                if !buffer.is_empty() {
+                    app.send_intent(Intent::Notify {
+                        title: buffer,
+                        body: None,
+                    });
+                }
+            }
+        }
+    }
+}
+
+fn parse_start(raw: &str) -> (String, Vec<String>) {
+    let raw = raw.trim();
+    if let Some((name, rest)) = raw.split_once('|') {
+        let argv = shellish_split(rest.trim());
+        (name.trim().to_string(), argv)
+    } else {
+        let argv = shellish_split(raw);
+        let name = argv.first().cloned().unwrap_or_else(|| "agent".into());
+        (name, argv)
+    }
+}
+
+fn shellish_split(s: &str) -> Vec<String> {
+    s.split_whitespace().map(|p| p.to_string()).collect()
+}
+
+fn apply_palette_action(app: &mut App, action: PaletteAction) {
+    app.mode = Mode::Board;
+    match action {
+        PaletteAction::Focus => app.send_intent(Intent::FocusSelected),
+        PaletteAction::Peek => app.send_intent(Intent::PeekSelected),
+        PaletteAction::Send => {
+            app.mode = Mode::Input {
+                title: "send to selected agent".into(),
+                buffer: String::new(),
+                kind: InputKind::Send,
+            };
+        }
+        PaletteAction::Start => {
+            app.mode = Mode::Input {
+                title: "start agent · name|cmd args  OR  cmd args".into(),
+                buffer: String::new(),
+                kind: InputKind::StartAgent,
+            };
+        }
+        PaletteAction::WaitDone => {
+            app.send_intent(Intent::WaitSelected {
+                status: AgentState::Done,
+            });
+        }
+        PaletteAction::WaitBlocked => {
+            app.send_intent(Intent::WaitSelected {
+                status: AgentState::Blocked,
+            });
+        }
+        PaletteAction::OpenZed => {
+            app.send_intent(Intent::OpenZed {
+                path: None,
+                mode: acex_model::ZedOpenMode::Default,
+            });
+        }
+        PaletteAction::OpenZedNew => {
+            app.send_intent(Intent::OpenZed {
+                path: None,
+                mode: acex_model::ZedOpenMode::NewWindow,
+            });
+        }
+        PaletteAction::Attach => app.send_intent(Intent::AttachSelected),
+        PaletteAction::AttachSession => app.send_intent(Intent::AttachSession),
+        PaletteAction::Worktrees => app.send_intent(Intent::WorktreeList),
+        PaletteAction::Resnapshot => app.send_intent(Intent::Resnapshot),
+        PaletteAction::RefreshAgents => app.send_intent(Intent::RefreshAgents),
+        PaletteAction::Notify => {
+            app.mode = Mode::Input {
+                title: "notification title".into(),
+                buffer: String::new(),
+                kind: InputKind::Notify,
+            };
+        }
+    }
+}
+
+fn draw(f: &mut ratatui::Frame, store: &Store, app: &App) {
+    let area = f.area();
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(8),
+            Constraint::Length(3),
+        ])
+        .split(area);
+
+    draw_header(f, chunks[0], store);
+
+    let body = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(48), Constraint::Percentage(52)])
+        .split(chunks[1]);
+
+    draw_board(f, body[0], store);
+    draw_detail(f, body[1], store);
+    draw_footer(f, chunks[2], store, app);
+
+    match &app.mode {
+        Mode::Palette => draw_palette_modal(f, area, app),
+        Mode::Input { title, buffer, .. } => draw_input_modal(f, area, title, buffer),
+        Mode::Board => {}
+    }
+}
+
+fn draw_header(f: &mut ratatui::Frame, area: Rect, store: &Store) {
+    let status = match store.conn {
+        ConnState::Offline => "offline",
+        ConnState::Connecting => "connecting…",
+        ConnState::Live if store.subscribed => "live●",
+        ConnState::Live => "live",
+        ConnState::Reconnecting => "reconnecting…",
+    };
+    let title = Line::from(vec![
+        Span::styled(" ACEX ", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw("· "),
+        Span::styled(status, Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(format!(
+            " · ev {} · gen {} · re {}",
+            store.event_count, store.snapshot_gen, store.reconnect_count
+        )),
+    ]);
+    let p = Paragraph::new(title).block(Block::default().borders(Borders::ALL).title("acex"));
+    f.render_widget(p, area);
+}
+
+fn draw_board(f: &mut ratatui::Frame, area: Rect, store: &Store) {
+    let counts = store.state_counts();
+    let filter_label = match store.filter.state {
+        None => "all".to_string(),
+        Some(s) => s.as_str().to_string(),
+    };
+    let mut items: Vec<ListItem> = Vec::new();
+    items.push(ListItem::new(format!(
+        "filter:{filter_label} q={:?}  [i{} w{} b{} d{} u{}]",
+        store.filter.query, counts[0].1, counts[1].1, counts[2].1, counts[3].1, counts[4].1,
+    )));
+
+    let rows = store.filtered_agents();
+    if rows.is_empty() {
+        items.push(ListItem::new("  (empty board) · Ctrl+K start"));
+    } else {
+        for (idx, a) in rows {
+            let sel = store.selected == Some(idx);
+            let mark = if sel { "▶" } else { " " };
+            let name = a.name.as_deref().unwrap_or(a.id.as_str());
+            let target = a.pane_id.as_deref().unwrap_or(a.id.as_str());
+            let wait = store
+                .waits
+                .iter()
+                .find(|w| w.target == target && w.armed)
+                .map(|w| format!(" ⏳{}", w.want.as_str()))
+                .unwrap_or_default();
+            let line = format!(
+                "{mark} [{:>8}] {} ({}){wait}",
+                a.state.as_str(),
+                name,
+                target
+            );
+            let item = if sel {
+                ListItem::new(line).style(Style::default().add_modifier(Modifier::BOLD))
+            } else {
+                ListItem::new(line)
+            };
+            items.push(item);
+        }
+    }
+
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("agents · j/k · 1-5 filter · / search"),
+    );
+    f.render_widget(list, area);
+}
+
+fn draw_detail(f: &mut ratatui::Frame, area: Rect, store: &Store) {
+    let mut lines: Vec<Line> = Vec::new();
+
+    if let Some(a) = store.selected_agent() {
+        lines.push(Line::from(format!(
+            "selected · {} · {}",
+            a.pane_id.as_deref().unwrap_or(&a.id),
+            a.state.as_str()
+        )));
+        if let Some(cwd) = &a.cwd {
+            lines.push(Line::from(format!("cwd {cwd}")));
+        }
+    } else {
+        lines.push(Line::from("no selection"));
+    }
+
+    if let Some(toast) = &store.toast {
+        lines.push(Line::from(format!("toast: {toast}")));
+    }
+    if let Some(note) = &store.status_note {
+        lines.push(Line::from(note.as_str()));
+    }
+    if let Some(err) = &store.last_error {
+        lines.push(Line::from(format!("! {err}")));
+    }
+
+    lines.push(Line::from(""));
+    lines.push(Line::from(format!(
+        "peek {} · {}",
+        store.peek_target.as_deref().unwrap_or("-"),
+        if store.peek_busy { "…" } else { "ready" }
+    )));
+    if store.peek_lines.is_empty() {
+        lines.push(Line::from("  (r refresh peek)"));
+    } else {
+        let take = store.peek_lines.len().saturating_sub(40);
+        for l in store.peek_lines.iter().skip(take) {
+            lines.push(Line::from(format!("  {l}")));
+        }
+    }
+
+    if !store.worktrees.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::from("worktrees:"));
+        for w in store.worktrees.iter().take(8) {
+            lines.push(Line::from(format!("  · {w}")));
+        }
+    }
+
+    if !store.waits.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::from("waits:"));
+        for w in &store.waits {
+            lines.push(Line::from(format!("  · {}", w.message)));
+        }
+    }
+
+    if !store.recent_events.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::from("events:"));
+        for e in store.recent_events.iter().rev().take(5) {
+            lines.push(Line::from(format!("  · {e}")));
+        }
+    }
+
+    let p = Paragraph::new(lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("detail · peek"),
+        )
+        .wrap(Wrap { trim: false });
+    f.render_widget(p, area);
+}
+
+fn draw_footer(f: &mut ratatui::Frame, area: Rect, store: &Store, app: &App) {
+    let flash = app
+        .status_flash
+        .as_deref()
+        .or(store.toast.as_deref())
+        .unwrap_or("");
+    let help = format!(
+        " Ctrl+K palette · f focus · r peek · s send · w/b wait · a attach · z zed · t worktrees · q quit  {flash}"
+    );
+    let p = Paragraph::new(help).block(Block::default().borders(Borders::ALL).title("keys"));
+    f.render_widget(p, area);
+}
+
+fn draw_palette_modal(f: &mut ratatui::Frame, area: Rect, app: &App) {
+    let popup = centered_rect(60, 60, area);
+    f.render_widget(Clear, popup);
+    let items: Vec<ListItem> = app
+        .palette
+        .filtered()
+        .into_iter()
+        .enumerate()
+        .map(|(i, a)| {
+            let mark = if i == app.palette.selected {
+                "▶ "
+            } else {
+                "  "
+            };
+            ListItem::new(format!("{mark}{}", a.label()))
+        })
+        .collect();
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(format!("palette · {}", app.palette.query)),
+    );
+    f.render_widget(list, popup);
+}
+
+fn draw_input_modal(f: &mut ratatui::Frame, area: Rect, title: &str, buffer: &str) {
+    let popup = centered_rect(70, 20, area);
+    f.render_widget(Clear, popup);
+    let p = Paragraph::new(format!("{buffer}▌")).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(title)
+            .title_bottom(" enter submit · esc cancel "),
+    );
+    f.render_widget(p, popup);
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
+}

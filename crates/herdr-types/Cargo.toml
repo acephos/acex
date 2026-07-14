@@ -1,0 +1,11 @@
+[package]
+name = "herdr-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Herdr NDJSON protocol types for acex (forward-compatible)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

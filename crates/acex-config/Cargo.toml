@@ -1,0 +1,11 @@
+[package]
+name = "acex-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "acex configuration: session, socket, editor, presets, keybinds"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+dirs = { workspace = true }

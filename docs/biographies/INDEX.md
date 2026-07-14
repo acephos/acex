@@ -1,0 +1,27 @@
+# Artifact biographies — index
+
+Each durable artifact has a short **purpose → origin → status → how to change** record.
+Agents use this for provenance; chat is not history.
+
+| Artifact | Biography |
+|----------|-----------|
+| Project soul | [SOUL.md](./SOUL.md) |
+| Project goals | [GOAL.md](./GOAL.md) |
+| Agent ops manual | [AGENTS.md](./AGENTS.md) |
+| Living tracker | [tracker.md](./tracker.md) |
+| Architecture | [../ARCHITECTURE.md](../ARCHITECTURE.md) (self-bio) |
+| Extension contract | [../EXTENDING.md](../EXTENDING.md) (self-bio) |
+| Verify gates | [../VERIFY.md](../VERIFY.md) (self-bio) |
+| Pi philosophy map | [../PHILOSOPHY_PI.md](../PHILOSOPHY_PI.md) (self-bio) |
+| `acex-discover` | [acex-discover.md](./acex-discover.md) |
+| `herdr-types` | [herdr-types.md](./herdr-types.md) |
+| `herdr-client` | [herdr-client.md](./herdr-client.md) |
+| `acex-model` | [acex-model.md](./acex-model.md) |
+| `acex-ui` | [acex-ui.md](./acex-ui.md) |
+| `acex-editor` | [acex-editor.md](./acex-editor.md) |
+| `acex-config` | [acex-config.md](./acex-config.md) |
+| `acex` binary | [acex-bin.md](./acex-bin.md) |
+| Protocol schema | [schema.md](./schema.md) |
+| Project skill | [skill.md](./skill.md) |
+
+**Rule:** When you create a durable artifact, add a row here + a biography file (or section).
