@@ -10,6 +10,10 @@ Durable outputs referenced by `docs/tracker.html` and biographies.
 | Extension guide | `docs/EXTENDING.md` | self |
 | Verify gates | `docs/VERIFY.md` | self |
 | Agent skill | `skills/acex-dev/SKILL.md` | [biographies/skill.md](../biographies/skill.md) |
+| Discovery crate | `crates/acex-discover/` | [biographies/acex-discover.md](../biographies/acex-discover.md) |
+| Example package manifest | `packages/example-board-hints/acex-package.toml` | Drop-in discovery fixture (reported by `--status`) |
+
+Current observed Herdr API: protocol 16, version 0.7.2-preview; refreshed/checked for 2026-07-14.
 
 Refresh schema:
 

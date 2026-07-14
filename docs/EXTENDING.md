@@ -7,8 +7,8 @@
 | | |
 |--|--|
 | **Purpose** | Copy-paste contract for adding capabilities without violating ownership. |
-| **Origin** | Codified after Phase 1 Intent + palette registry (F14/F29). |
-| **Status** | Canonical extension how-to. |
+| **Origin** | Codified after Phase 1/G1 core actions and `acex-discover` drop-in metadata shipped. |
+| **Status** | Canonical extension how-to for the current 8-crate workspace. |
 | **Change** | Update when a new seam is introduced; link from AGENTS.md. |
 
 ---
@@ -38,7 +38,7 @@ version = "0.1.0"
 [[actions]]
 id = "focus"
 label = "Focus selected"
-intent = "FocusSelected"   # must match a known Intent when wiring code
+intent = "FocusSelected"   # known compile-time Intent; manifests do not create new runtime actions by themselves
 ```
 
 3. Optionally add `skills/<name>/SKILL.md` (Agent Skills frontmatter).  
@@ -46,14 +46,19 @@ intent = "FocusSelected"   # must match a known Intent when wiring code
 
 ```bash
 cargo run -p acex -- --status
-# packages[].name includes my-pack
+# emits acex_status, packages, skills, and seams; current repo baseline is packages=1 skills=1
 ```
+
+`--status` lists package summaries and skill summaries. Package manifests may declare skill paths for metadata/detail, while shipped skill summary scanning enumerates repo skill roots such as `skills/*/SKILL.md`.
 
 5. Progressive detail: agents `read` the package README / skill body on demand — summaries only at scan time (`acex_discover::scan`).
 
 ---
 
 ## Recipe A — New operator action (most common)
+
+Current shipped references: palette actions cover focus, peek, send, start, wait done/blocked, Zed open/new/add-window, attach/session attach, worktrees, resnapshot, refresh agents, and notify. The `Intent` surface also has Zed diff support for worker/editor integration.
+
 
 **Goal:** palette + key binding + Herdr (or side-effect) behavior.
 
@@ -92,6 +97,8 @@ Intent::MyAction { … } => {
 ```
 
 If you need a new Herdr method, add it on `HerdrClient` in `crates/herdr-client/src/ops.rs` first.
+Current unary Herdr surface: `ping` and `session.snapshot` in `HerdrClient`; `ops.rs` wraps `agent.list`, `agent.get`, `agent.focus`, `agent.send`, `agent.read`, `pane.read`, `agent.start`, `worktree.list`, and `notification.show`.
+
 
 ### 4. Tracker
 
@@ -100,10 +107,14 @@ In `docs/tracker.html`: set feature status, prepend a **Comment**, append **Chan
 ### 5. Verify
 
 ```bash
-cargo test --workspace
+cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo run -p acex -- --status
 cargo run -p acex -- --smoke
 ```
+For discovery-only changes, also run `cargo run -p acex -- --status`. Observed 2026-07-14: workspace tests 29 passed; live smoke/status and offline status OK.
+
 
 **Invariants:** UI does not open sockets; model does not spawn processes; worker does not draw.
 
@@ -128,6 +139,8 @@ cargo run -p acex -- --smoke
 ---
 
 ## Recipe D — Protocol field / schema drift
+
+Current observed schema/protocol: Herdr protocol 16, version 0.7.2-preview (2026-07-14 refresh).
 
 1. Refresh schema:  
    `herdr api schema --json > crates/herdr-types/schemas/herdr-api.schema.json`  

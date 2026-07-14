@@ -39,7 +39,7 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 
 1. `docs/tracker.html` is the **sole** project tracker — features, phases, comments, artifacts, decisions.
 2. Every meaningful change updates tracker status (and SOUL/GOAL if philosophy shifts).
-3. Scaffold, schema, and demo script stay aligned with Herdr protocol reality.
+3. Control-plane implementation, schema, and demo script stay aligned with Herdr protocol reality.
 4. Lessons from failures become tests + tracker comments, not lore.
 
 ---
@@ -49,9 +49,9 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 | Gate | Name | Must include |
 |------|------|----------------|
 | **G0** | Skeleton live | Connect, snapshot, subscribe, reconnect, empty/error UX |
-| **G1** | **MVP ship** | Board + peek + start/send/wait + palette + Zed open + attach + reconnect |
-| **G1.5** | Recommended | Worktree CRUD, layout presets (warned), diff, notify, pane run, workspace strip |
-| **G2** | Post-MVP | Platform pipes, optional observe, multi-session, richer ANSI — not required for “usable” |
+| **G1** | **MVP ship** | Board + peek + start/send/wait + palette + Zed open + attach + reconnect + basic worktree visibility |
+| **G1.5** | Recommended | Worktree CRUD polish, layout presets (warned), diff, notify, pane run, workspace strip |
+| **G2** | Post-MVP | Additional platform polish, optional observe, multi-session, richer ANSI — not required for “usable” |
 
 **Definition of “usable”:** G1 demo script steps 1–12 pass on a clean Unix-ish environment with `herdr` + `zed` on PATH.
 
@@ -94,14 +94,14 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 
 ## Near-term objective (active)
 
-**Phase 0 → finish G0 exit demo:**
+**G1 usable core → polish to MVP ship:**
 
-1. ~~Phase 0 / G0~~ · ~~Phase 1 core control plane~~ (board, palette, focus/peek/send/start/wait/zed/attach/worktrees)
-2. **G1 polish:** demo script E2E, start presets, wait timeout UX, attach robustness
-3. Then recommended G1.5 (worktree CRUD, layouts, diff, notify polish)
+1. ~~Phase 0 / G0~~ · ~~Phase 1 core control plane~~ (board, filters, palette, focus/peek/send/start/wait/zed/attach/worktrees)
+2. **Current:** keep the G1 demo path honest with live smoke/status checks and tighten start presets, wait timeout UX, and attach target variants
+3. **Next:** recommended G1.5 (worktree CRUD, pane run, layouts, diff, notify polish, paths chrome, workspace focus)
 4. Phase 2 post-MVP
 
-Then execute Phase 1 toward **G1 MVP ship**.
+Phase 1 is usable today; the active work is polish and evidence, not first bring-up.
 
 ---
 

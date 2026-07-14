@@ -18,8 +18,8 @@
 
 | Pi idea | Meaning in Pi | **acex Rust equivalent** |
 |---------|---------------|---------------------------|
-| **Minimal core** | Small harness; features as extensions/skills/packages | Keep SOUL ownership: thin `acex` bin; pure `acex-model`; I/O in `herdr-client` / `acex-editor` / `acex-ui` only |
-| **Progressive disclosure** | Startup lists skill *names+descriptions*; full `SKILL.md` loaded on demand | `acex-discover` scans manifests → summary list; detail load is separate API (no full doc parse at hot path) |
+| **Minimal core** | Small harness; features as extensions/skills/packages | Keep SOUL ownership: thin `acex` bin; pure `acex-model`; discovery metadata in `acex-discover`; I/O in `herdr-client` / `acex-editor` / `acex-ui` only |
+| **Progressive disclosure** | Startup lists skill *names+descriptions*; full `SKILL.md` loaded on demand | `acex-discover` scans manifests → summary list; detail load is separate API (no full doc parse at hot path); current repo baseline discovers packages=1 skills=1 via `--status` |
 | **Discovery paths** | `~/.pi/...`, `.pi/skills`, packages, settings | Project: `.acex/packages/*/acex-package.toml`, `packages/*/acex-package.toml`, `skills/*/SKILL.md` |
 | **Agent-readable rules** | `AGENTS.md`, docs the agent can explain | SOUL/GOAL/AGENTS + linked architecture/extend/verify/biographies |
 | **Self-extensible** | Drop files → auto-discover without forking core | Drop package dir with TOML manifest → appears in `--status` / smoke JSON; wire code via Intent/registry recipe |
@@ -45,10 +45,10 @@
 ## Mapped extension loop (Pi-like, Rust-native)
 
 ```
-discover (fs scan, pure)  →  list summaries (smoke/status JSON)
+discover (fs scan, pure)  →  list summaries (--status/--smoke JSON)
                           →  progressive detail (optional load)
-                          →  register into palette/intent via documented seams
-                          →  tracker + skill docs for agents
+                          →  register code hooks at compile time via Intent/palette/worker
+                          →  package manifests declare metadata for known intents
 ```
 
 1. **Discover** — `acex_discover::scan` (shipped, unit-tested).  
@@ -56,13 +56,15 @@ discover (fs scan, pure)  →  list summaries (smoke/status JSON)
 3. **Extend** — [EXTENDING.md](./EXTENDING.md): Intent → palette → worker; packages may *declare* actions that map to known intent ids.  
 4. **Prove** — [VERIFY.md](./VERIFY.md); discovery fixture tests call shipped scan.
 
+Status: `acex_discover::scan` is shipped; `--status` / `--smoke` expose summaries. G1 core board/palette/focus/peek/send/start/wait/Zed/attach/worktrees is usable; polish remains.
+
 ---
 
 ## Vocabulary bridge
 
 | Pi term | acex term |
 |---------|-----------|
-| skill | `skills/*/SKILL.md` or package-contributed skill path |
+| skill | `skills/*/SKILL.md` or `.agents/skills/*/SKILL.md` summary; package manifests may list skill paths for detail/metadata |
 | extension | compile-time crate code + optional package manifest metadata |
 | package | `.acex/packages/<id>/acex-package.toml` drop-in |
 | resources_discover | `acex_discover::scan` / `--status` |

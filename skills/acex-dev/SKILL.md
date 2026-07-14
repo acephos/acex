@@ -26,6 +26,7 @@ Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 - `acex-model` / `acex-discover` are pure (no network UI).  
 - Never `herdr server stop` on acex quit.  
 - Peeks are caches; Herdr + FS are authority.  
+- Tracker is the sole planning truth; update `docs/tracker.html` for scope/status changes.  
 - **No jiti/TS runtime loaders** — manifests + compile-time registry only.
 
 ## Pi-like extension loop
@@ -42,7 +43,7 @@ Lineage: [docs/biographies/INDEX.md](../../docs/biographies/INDEX.md).
 3. Arm in `acex/src/worker.rs` (+ `herdr-client/ops.rs` if new RPC)  
 4. Optional: declare action in a package manifest for discovery  
 5. Update `docs/tracker.html`  
-6. `cargo test --workspace` and `cargo clippy --workspace --all-targets -- -D warnings`
+6. Run the full verify set below before claiming done.
 
 ## Verify before claiming done
 
@@ -53,6 +54,8 @@ cargo test --workspace
 cargo run -p acex -- --status
 cargo run -p acex -- --smoke
 ```
+
+Use `--status` for machine-readable conn/packages/skills; use `--smoke` for the binary connect path. Observed 2026-07-14: workspace tests 29 passed, live status/smoke and offline status OK, current discovery packages=1 skills=1.
 
 ## Tracker discipline
 

@@ -32,8 +32,8 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 
 ## Status
 
-Phase **0 / G0 complete**. Phase **1** control plane is usable (board + palette + actions).  
-Production hygiene: `fmt` + `clippy -D warnings` + `test` + smoke entry path.
+Phase **0 / G0 complete**. Phase **1 / G1 usable core** is in place: board, filters, palette, focus, peek, send, start, wait, Zed open, attach, worktree list, reconnect/resnapshot. Remaining work is G1 polish and G1.5 expansion.
+Observed 2026-07-14: `fmt`, `clippy -D warnings`, workspace tests (29 passed), live `--status`/`--smoke`, and offline `--status` are OK.
 
 ```bash
 start docs/tracker.html   # Windows
@@ -50,6 +50,7 @@ acex/
     acex-ui/         # ratatui
     acex-editor/     # Zed bridge
     acex-config/     # config
+    acex-discover/   # package + skill discovery
     acex/            # binary
   docs/              # architecture, extend, verify, biographies, tracker
   skills/acex-dev/   # agent skill
@@ -58,17 +59,19 @@ acex/
 
 ## Build & verify
 
-Requires Rust (edition 2021+). Herdr optional for offline-honest smoke.
+Requires Rust (edition 2021+). Herdr is optional for offline-honest `--status`; live `--smoke` exercises the connect path.
 
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+cargo run -p acex -- --status           # Machine-readable conn/packages/skills
 cargo run -p acex -- --smoke            # Live or actionable offline + discovery JSON
-cargo run -p acex -- --status           # Machine-readable packages/skills/conn (no TUI)
-cargo run -p acex -- --smoke-reconnect  # F04 (stops local herdr server)
+cargo run -p acex -- --smoke-reconnect  # F04 reconnect path; may mutate local Herdr server
 cargo run -p acex                       # TUI (q quit)
 ```
+Observed Herdr schema/protocol: protocol 16, Herdr 0.7.2-preview (2026-07-14); `herdr-types` schema artifact is protocol 16. Current discovery reports packages=1 (`packages/example-board-hints/acex-package.toml`) and skills=1 (`skills/acex-dev/SKILL.md`).
+
 
 **Drop-in package dirs:** `.acex/packages/*/acex-package.toml`, `packages/*/acex-package.toml`, `skills/*/SKILL.md`.
 
@@ -81,4 +84,4 @@ Full list in SOUL + tracker cut list.
 
 ## License
 
-TBD.
+MIT OR Apache-2.0 (workspace metadata).

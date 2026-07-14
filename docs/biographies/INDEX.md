@@ -3,6 +3,8 @@
 Each durable artifact has a short **purpose → origin → status → how to change** record.
 Agents use this for provenance; chat is not history.
 
+Current workspace: 8 crates; `docs/tracker.html` is the sole planning truth.
+
 | Artifact | Biography |
 |----------|-----------|
 | Project soul | [SOUL.md](./SOUL.md) |

@@ -7,8 +7,8 @@
 | | |
 |--|--|
 | **Purpose** | Name crate boundaries, data flow, and extension seams so agents change the right layer. |
-| **Origin** | Scaffolded with Phase 0 cargo workspace; refined through F01–F14 control-plane work. |
-| **Status** | Production-oriented control plane: unary RPC + long-lived subscribe + intent worker. |
+| **Origin** | Scaffolded with Phase 0 cargo workspace; refined through F01–F14 control-plane work and the `acex-discover` package/skill discovery pass. |
+| **Status** | Phase 0/G0 done; Phase 1/G1 usable core: board, palette, focus, peek, send, start, wait, Zed, attach, worktrees; polish remains. |
 | **Change** | Edit this file when ownership or data-flow changes; note decision in `docs/tracker.html`. |
 
 ---
@@ -16,11 +16,12 @@
 ## Crate map
 
 ```
-acex (bin)           compose: bootstrap, live loop, intent worker, CLI flags
+acex (bin)           compose: bootstrap, live loop, discovery, intent worker, CLI flags
   ├── acex-ui        ratatui ONLY — keys, palette, board, modals
   ├── acex-model     pure store + reducers + Intent enum (no I/O)
   ├── acex-config    env/defaults (socket, editor, peek lines)
   ├── acex-editor    EditorBridge trait + Zed CLI adapter
+  ├── acex-discover  filesystem package/skill scan + progressive disclosure
   ├── herdr-client   Transport, NDJSON, subscribe, unary ops, spawn
   └── herdr-types    wire models, AgentState, SessionSnapshot (no I/O)
 ```
@@ -33,6 +34,7 @@ acex (bin)           compose: bootstrap, live loop, intent worker, CLI flags
 | Drawing / keys | `acex-ui` | model import ratatui |
 | Session reduce | `acex-model` | block on network |
 | Spawn editor | `acex-editor` | hardcode paths in UI |
+| Discovery / package+skill manifests | `acex-discover` | spawn processes, speak Herdr NDJSON, or draw UI |
 | Protocol shapes | `herdr-types` | depend on tokio/UI |
 
 ---
@@ -40,6 +42,8 @@ acex (bin)           compose: bootstrap, live loop, intent worker, CLI flags
 ## Runtime data flow
 
 ```
+discover/status: cwd → acex_discover::scan → --status/--smoke JSON packages+skills summaries
+
 bootstrap: ping → session.snapshot → Store::apply_snapshot
            optional agent.list merge
 
@@ -47,7 +51,7 @@ live:      events.subscribe (long-lived pipe/UDS)
            → SubscriptionPush → Event → Store::apply_event
 
 unary:     UI Intent → mpsc → worker → HerdrClient::request (connect-per-call)
-           → Store patch (toast / peek / agents)
+           → agent.focus/send/read/start/list/get, pane.read, worktree.list, notification.show → Store patch
 
 resync:    stream drop → resync_with_backoff → apply_resnapshot → resubscribe
 ```
@@ -78,6 +82,7 @@ Full steps: [EXTENDING.md](./EXTENDING.md).
 | Operator action | `Intent` + palette + worker arm | `acex-model/intent.rs`, `acex-ui/palette.rs`, `acex/worker.rs` |
 | Transport | `Transport` trait | `herdr-client/transport.rs` |
 | Editor | `EditorBridge` trait | `acex-editor` |
+| Drop-in metadata | `acex_discover::scan` / `load_package` + package/skill manifests | `acex-discover`, `packages/*/acex-package.toml`, `skills/*/SKILL.md` |
 | Protocol types | serde models + schema artifact | `herdr-types`, `schemas/herdr-api.schema.json` |
 
 ---

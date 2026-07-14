@@ -18,7 +18,7 @@ You are collaborating on **acex**: a Herdr-centric agent-dev control plane.
 **Skill:** load [skills/acex-dev/SKILL.md](./skills/acex-dev/SKILL.md) when modifying this repo.
 
 **Drop-in packages:** place `acex-package.toml` under `.acex/packages/<id>/` or `packages/<id>/`.  
-List with `cargo run -p acex -- --status` (JSON: `packages`, `skills`).
+List with `cargo run -p acex -- --status` (JSON: `packages`, `skills`). Current repo discovery is packages=1 (`example-board-hints`) and skills=1 (`acex-dev`).
 
 **Lineage:** [docs/biographies/INDEX.md](./docs/biographies/INDEX.md) — every durable artifact’s purpose → origin → status → how to change.
 
@@ -61,8 +61,9 @@ acex is **self-aware** (docs know phase and gates) and **self-improving** (frict
 acex (bin)
   ├── acex-ui        ratatui only
   ├── acex-model     store, reducers, filters, waiters, Intent
-  ├── acex-config    session, socket, editor path, presets
+  ├── acex-config    session, socket, editor path, peek defaults
   ├── acex-editor    editor bridge (Zed default)
+  ├── acex-discover  package and skill discovery
   ├── herdr-client   NDJSON, reconnect, spawn server
   └── herdr-types    protocol models, forward-compat serde
 ```
@@ -72,6 +73,8 @@ acex (bin)
 - Only `herdr-client` speaks NDJSON to Herdr.  
 - Only `acex-editor` (or future editor adapters) spawns the editor.  
 - Only `acex-ui` draws.  
+- `docs/tracker.html` is the sole planning truth; do not treat chat or ad-hoc docs as status authority.  
+- `acex-discover` is pure filesystem discovery; it does not execute packages, open sockets, or draw UI.  
 - Never treat peek buffers as source of truth.  
 - Never `server.stop` on acex quit.
 
@@ -103,6 +106,8 @@ Add `Intent` → palette action → worker arm → tracker note. Full recipe: [d
 
 Sockets: config-dir `herdr/herdr.sock` · sessions · `HERDR_SOCKET_PATH` / `HERDR_SESSION`  
 Schema: `herdr api schema --json` → `crates/herdr-types/schemas/`
+Observed 2026-07-14: Herdr protocol 16 / 0.7.2-preview; schema artifact lives at `crates/herdr-types/schemas/herdr-api.schema.json`.
+
 
 ---
 
@@ -143,8 +148,11 @@ Schema: `herdr api schema --json` → `crates/herdr-types/schemas/`
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+cargo run -p acex -- --status
 cargo run -p acex -- --smoke
 ```
+Observed 2026-07-14: workspace tests 29 passed; live status/smoke and offline status OK.
+
 
 Optional: `HERDR_E2E=1 cargo test -p herdr-client --test live_herdr -- --nocapture`
 
