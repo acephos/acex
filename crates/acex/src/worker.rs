@@ -53,7 +53,7 @@ async fn handle_intent(
     target: &SocketTarget,
     spawn: bool,
     peek_lines: u32,
-    editor: &ZedBridge,
+    editor: &dyn EditorBridge,
     store: &Arc<Mutex<Store>>,
     intent: Intent,
 ) -> anyhow::Result<()> {
@@ -152,9 +152,11 @@ async fn handle_intent(
             s.last_error = None;
         }
         Intent::DiffZed { old, new } => {
-            editor.diff(std::path::Path::new(&old), std::path::Path::new(&new))?;
+            let (old, new) = resolve_diff_paths(&old, &new)?;
+            editor.diff(&old, &new)?;
             let mut s = lock_store(store.as_ref());
             s.set_toast("zed --diff");
+            s.last_error = None;
         }
         Intent::Attach { target: attach } => {
             let attach = match attach {
@@ -391,6 +393,21 @@ fn non_blank(value: &str, label: &str) -> anyhow::Result<String> {
     Ok(trimmed.to_string())
 }
 
+fn resolve_diff_paths(old: &str, new: &str) -> anyhow::Result<(PathBuf, PathBuf)> {
+    Ok((
+        resolve_existing_path(old, "zed diff old path")?,
+        resolve_existing_path(new, "zed diff new path")?,
+    ))
+}
+
+fn resolve_existing_path(raw: &str, label: &str) -> anyhow::Result<PathBuf> {
+    let path = PathBuf::from(non_blank(raw, label)?);
+    if !path.try_exists()? {
+        anyhow::bail!("{label} does not exist: {}", path.display());
+    }
+    Ok(path)
+}
+
 fn attach_toast(target: &AttachTarget) -> String {
     match target {
         AttachTarget::SelectedAgent => "attach selected".into(),
@@ -503,6 +520,25 @@ fn now_ms() -> u64 {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    #[derive(Default)]
+    struct RecordingEditor {
+        diffs: Mutex<Vec<(PathBuf, PathBuf)>>,
+    }
+
+    impl EditorBridge for RecordingEditor {
+        fn open_path(&self, _path: &std::path::Path, _mode: OpenMode) -> acex_editor::Result<()> {
+            Ok(())
+        }
+
+        fn diff(&self, old: &std::path::Path, new: &std::path::Path) -> acex_editor::Result<()> {
+            self.diffs
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .push((old.to_path_buf(), new.to_path_buf()));
+            Ok(())
+        }
+    }
 
     fn env_value<'a>(plan: &'a HerdrCommandPlan, key: &str) -> Option<&'a OsString> {
         plan.env.iter().find_map(|(k, v)| (*k == key).then_some(v))
@@ -634,5 +670,59 @@ mod tests {
         assert_eq!(req.path, Some("../feature"));
         assert_eq!(req.workspace_id, Some("ws-1"));
         assert!(!req.focus);
+    }
+
+    #[test]
+    fn zed_diff_path_validation_rejects_blank_and_missing_paths() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let old = dir.path().join("old.txt");
+        std::fs::write(&old, "old").expect("write old");
+
+        let blank = resolve_diff_paths("  ", old.to_str().expect("utf8 path"))
+            .expect_err("blank old path should fail");
+        assert!(blank.to_string().contains("zed diff old path is blank"));
+
+        let missing = dir.path().join("missing.txt");
+        let err = resolve_diff_paths(
+            old.to_str().expect("utf8 path"),
+            missing.to_str().expect("utf8 path"),
+        )
+        .expect_err("missing new path should fail");
+        assert!(err.to_string().contains("zed diff new path does not exist"));
+    }
+
+    #[tokio::test]
+    async fn diff_intent_validates_paths_and_calls_editor_bridge() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let old = dir.path().join("old.txt");
+        let new = dir.path().join("new.txt");
+        std::fs::write(&old, "old").expect("write old");
+        std::fs::write(&new, "new").expect("write new");
+        let editor = RecordingEditor::default();
+        let store = Arc::new(Mutex::new(Store::default()));
+
+        handle_intent(
+            &SocketTarget::Default,
+            false,
+            80,
+            &editor,
+            &store,
+            Intent::DiffZed {
+                old: old.to_string_lossy().into_owned(),
+                new: new.to_string_lossy().into_owned(),
+            },
+        )
+        .await
+        .expect("diff intent");
+
+        let diffs = editor.diffs.lock().unwrap_or_else(|e| e.into_inner());
+        assert_eq!(diffs.len(), 1);
+        assert_eq!(diffs[0].0, old);
+        assert_eq!(diffs[0].1, new);
+        drop(diffs);
+
+        let store = lock_store(store.as_ref());
+        assert_eq!(store.toast.as_deref(), Some("zed --diff"));
+        assert_eq!(store.last_error, None);
     }
 }

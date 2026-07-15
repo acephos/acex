@@ -46,6 +46,7 @@ enum InputKind {
     WorktreeCreate,
     WorktreeOpen,
     WorktreeRemove,
+    ZedDiff,
 }
 
 pub struct App {
@@ -261,6 +262,10 @@ fn submit_input(app: &mut App) {
                     });
                 }
             }
+            InputKind::ZedDiff => match parse_zed_diff(&buffer) {
+                Some((old, new)) => app.send_intent(Intent::DiffZed { old, new }),
+                None => app.status_flash = Some("zed diff needs <old-path> <new-path>".into()),
+            },
             InputKind::FilterQuery => {
                 let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
                 s.filter.query = buffer;
@@ -449,6 +454,13 @@ fn parse_worktree_remove(raw: &str) -> Option<WorktreeRemoveSpec> {
     })
 }
 
+fn parse_zed_diff(raw: &str) -> Option<(String, String)> {
+    let mut parts = shellish_split(raw).into_iter();
+    let old = parts.next()?;
+    let new = parts.next()?;
+    parts.next().is_none().then_some((old, new))
+}
+
 fn non_empty_value(value: &str) -> Option<String> {
     let value = value.trim();
     (!value.is_empty()).then(|| value.to_string())
@@ -501,6 +513,13 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
                 path: None,
                 mode: acex_model::ZedOpenMode::NewWindow,
             });
+        }
+        PaletteAction::DiffZed => {
+            app.mode = Mode::Input {
+                title: "zed diff · <old-path> <new-path>".into(),
+                buffer: String::new(),
+                kind: InputKind::ZedDiff,
+            };
         }
         PaletteAction::Attach => app.send_intent(Intent::Attach {
             target: AttachTarget::SelectedAgent,
@@ -868,6 +887,33 @@ mod tests {
     fn pane_run_input_rejects_blank_command() {
         assert_eq!(non_empty_value("  "), None);
         assert_eq!(non_empty_value("cargo test").as_deref(), Some("cargo test"));
+    }
+
+    #[test]
+    fn zed_diff_parser_requires_exactly_two_paths() {
+        let (old, new) = parse_zed_diff("old.rs new.rs").expect("diff paths");
+        assert_eq!(old, "old.rs");
+        assert_eq!(new, "new.rs");
+
+        assert!(parse_zed_diff("old.rs").is_none());
+        assert!(parse_zed_diff("old.rs new.rs extra.rs").is_none());
+    }
+
+    #[test]
+    fn zed_diff_palette_action_opens_path_pair_input() {
+        let (tx, _rx) = std::sync::mpsc::channel();
+        let store = Arc::new(Mutex::new(Store::default()));
+        let mut app = App::with_shared(store, tx);
+
+        apply_palette_action(&mut app, PaletteAction::DiffZed);
+
+        match app.mode {
+            Mode::Input {
+                kind: InputKind::ZedDiff,
+                ..
+            } => {}
+            other => panic!("expected zed diff input mode, got {other:?}"),
+        }
     }
 
     #[test]
