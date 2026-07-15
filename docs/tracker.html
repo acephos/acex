@@ -223,12 +223,12 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-pr-loop-model-pin",
+  "latest_comment_id": "2026-07-15-pr-loop-default-profile",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "4b013f7b9077ee0d9a5bbf149ee49cee8b55d1cb34b2476ab002524fc8dcb2c2",
-    "entry_count": 10
+    "latest_hash": "9c351ed71dfdfff57fdbbb59159057db33326a2c7e8a1f75ebf3dede073a35dc",
+    "entry_count": 11
   },
   "next_ready": [
     {
@@ -650,6 +650,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-pr-loop-default-profile">
+        <div class="meta"><span class="tag">2026-07-15</span> · PR loop default profile auth fix · agent</div>
+        <p style="margin:0">
+          Changed PR-loop profile handling so continuation runs inherit the current authenticated OMP profile by default. The synthetic <code>omp-pr-loop</code> profile is now opt-in via <code>-Profile</code>/<code>--profile</code> because it isolated credentials/config and caused GitHub Copilot auth failures; <code>--no-session</code> already provides the fresh-session isolation needed for checkpoint continuation.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-pr-loop-model-pin">
         <div class="meta"><span class="tag">2026-07-15</span> · PR loop model pin · agent</div>
         <p style="margin:0">
@@ -858,7 +865,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>4b013f7b...</code></td>
+              <td>append-only hash-chain history; latest hash <code>9c351ed7...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1066,6 +1073,7 @@
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
+        <li><strong>2026-07-15</strong> — Changed PR loop default to inherit the authenticated OMP profile; <code>-Profile</code>/<code>--profile</code> is now opt-in for credential isolation.</li>
         <li><strong>2026-07-15</strong> — Pinned PR-loop OMP sessions to GitHub Copilot GPT-5.5 1M with high thinking to avoid Gemini quota fallback.</li>
         <li><strong>2026-07-15</strong> — Fixed PowerShell PR loop invocation so OMP <code>-p</code> is passed to the native CLI instead of PowerShell wrapper binding.</li>
         <li><strong>2026-07-15</strong> — Audited docs for freshness: active phase G1.5, full Herdr version, 46-test baseline, tracker footer/KPI, and biography status claims now align with live checkpoint facts.</li>
