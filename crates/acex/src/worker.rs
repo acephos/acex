@@ -7,10 +7,14 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use acex_editor::{EditorBridge, OpenMode, ZedBridge};
-use acex_model::{AttachTarget, Intent, Store, ZedOpenMode, DEFAULT_WAIT_TIMEOUT_MS};
+use acex_model::{
+    AttachTarget, Intent, Store, WorktreeCreateSpec, WorktreeOpenSpec, ZedOpenMode,
+    DEFAULT_WAIT_TIMEOUT_MS,
+};
 use herdr_client::{
     connect_with_optional_spawn, extract_agent_rows, extract_read_text,
-    resolve::session_socket_path, resync_with_backoff, SocketTarget,
+    resolve::session_socket_path, resync_with_backoff, SocketTarget, WorktreeCreateRequest,
+    WorktreeOpenRequest,
 };
 use tracing::{info, warn};
 
@@ -159,6 +163,65 @@ async fn handle_intent(
             s.set_toast(format!("worktrees {n}"));
             s.last_error = None;
         }
+        Intent::WorktreeCreate(spec) => {
+            let label = spec
+                .branch
+                .as_deref()
+                .or(spec.path.as_deref())
+                .unwrap_or("worktree")
+                .to_string();
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let r = client
+                .worktree_create(worktree_create_request(&spec))
+                .await?;
+            info!(%label, ?r, "worktree.create");
+            let list = client.worktree_list(None, None).await?;
+            let lines = format_worktrees(&list);
+            let n = lines.len();
+            let mut s = lock_store(store.as_ref());
+            s.worktrees = lines;
+            s.set_toast(format!("worktree created {label} · {n} listed"));
+            s.last_error = None;
+        }
+        Intent::WorktreeOpen(spec) => {
+            let label = spec
+                .workspace_id
+                .as_deref()
+                .or(spec.path.as_deref())
+                .or(spec.branch.as_deref())
+                .unwrap_or("worktree")
+                .to_string();
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let r = client.worktree_open(worktree_open_request(&spec)).await?;
+            info!(%label, ?r, "worktree.open");
+            let list = client.worktree_list(None, None).await?;
+            let lines = format_worktrees(&list);
+            let n = lines.len();
+            let mut s = lock_store(store.as_ref());
+            s.worktrees = lines;
+            s.set_toast(format!(
+                "worktree opened {label} · Herdr handoff · {n} listed"
+            ));
+            s.last_error = None;
+        }
+        Intent::WorktreeRemove(spec) => {
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let r = client
+                .worktree_remove(&spec.workspace_id, spec.force)
+                .await?;
+            info!(workspace_id = %spec.workspace_id, force = spec.force, ?r, "worktree.remove");
+            let list = client.worktree_list(None, None).await?;
+            let lines = format_worktrees(&list);
+            let n = lines.len();
+            let mut s = lock_store(store.as_ref());
+            s.worktrees = lines;
+            let forced = if spec.force { " forced" } else { "" };
+            s.set_toast(format!(
+                "worktree removed{forced} {} · {n} listed",
+                spec.workspace_id
+            ));
+            s.last_error = None;
+        }
         Intent::Resnapshot => {
             let (_pong, snap) = resync_with_backoff(target, spawn, 12).await?;
             let mut s = lock_store(store.as_ref());
@@ -224,6 +287,29 @@ fn resolve_open_path(store: &Arc<Mutex<Store>>, path: Option<String>) -> anyhow:
         }
     }
     Ok(std::env::current_dir()?)
+}
+
+fn worktree_create_request(spec: &WorktreeCreateSpec) -> WorktreeCreateRequest<'_> {
+    WorktreeCreateRequest {
+        branch: spec.branch.as_deref(),
+        path: spec.path.as_deref(),
+        base: spec.base.as_deref(),
+        label: spec.label.as_deref(),
+        cwd: spec.cwd.as_deref(),
+        workspace_id: spec.workspace_id.as_deref(),
+        focus: spec.focus,
+    }
+}
+
+fn worktree_open_request(spec: &WorktreeOpenSpec) -> WorktreeOpenRequest<'_> {
+    WorktreeOpenRequest {
+        branch: spec.branch.as_deref(),
+        path: spec.path.as_deref(),
+        label: spec.label.as_deref(),
+        cwd: spec.cwd.as_deref(),
+        workspace_id: spec.workspace_id.as_deref(),
+        focus: spec.focus,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -427,5 +513,47 @@ mod tests {
             .expect_err("selected target should be resolved by the worker");
 
         assert!(err.to_string().contains("must be resolved"));
+    }
+
+    #[test]
+    fn worktree_create_spec_maps_to_herdr_request() {
+        let spec = WorktreeCreateSpec {
+            branch: Some("feature".into()),
+            path: Some("../feature".into()),
+            base: Some("main".into()),
+            label: Some("Feature".into()),
+            cwd: Some("repo".into()),
+            workspace_id: Some("ws-1".into()),
+            focus: true,
+        };
+
+        let req = worktree_create_request(&spec);
+
+        assert_eq!(req.branch, Some("feature"));
+        assert_eq!(req.path, Some("../feature"));
+        assert_eq!(req.base, Some("main"));
+        assert_eq!(req.label, Some("Feature"));
+        assert_eq!(req.cwd, Some("repo"));
+        assert_eq!(req.workspace_id, Some("ws-1"));
+        assert!(req.focus);
+    }
+
+    #[test]
+    fn worktree_open_spec_maps_to_herdr_request() {
+        let spec = WorktreeOpenSpec {
+            branch: Some("feature".into()),
+            path: Some("../feature".into()),
+            label: None,
+            cwd: None,
+            workspace_id: Some("ws-1".into()),
+            focus: false,
+        };
+
+        let req = worktree_open_request(&spec);
+
+        assert_eq!(req.branch, Some("feature"));
+        assert_eq!(req.path, Some("../feature"));
+        assert_eq!(req.workspace_id, Some("ws-1"));
+        assert!(!req.focus);
     }
 }

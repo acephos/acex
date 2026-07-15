@@ -19,7 +19,7 @@ pub mod stream;
 pub mod subscribe;
 pub mod transport;
 
-pub use ops::{extract_agent_rows, extract_read_text};
+pub use ops::{extract_agent_rows, extract_read_text, WorktreeCreateRequest, WorktreeOpenRequest};
 pub use resolve::{default_socket_path, resolve_socket_path, SocketTarget};
 pub use stream::NdjsonStream;
 pub use subscribe::{

@@ -223,26 +223,14 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-pr-loop-default-profile",
+  "latest_comment_id": "2026-07-15-f13-worktree-crud",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "9c351ed71dfdfff57fdbbb59159057db33326a2c7e8a1f75ebf3dede073a35dc",
-    "entry_count": 11
+    "latest_hash": "f401f2789472ce971f74f9224c3586cfb98733cdcbc0ad823dd3716f901098d0",
+    "entry_count": 12
   },
   "next_ready": [
-    {
-      "id": "F13",
-      "title": "Worktree CRUD",
-      "status": "todo",
-      "phase": "G1.5 recommended",
-      "depends_on": ["F12"],
-      "owner": null,
-      "last_touched": null,
-      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Create/open/remove worktrees with force called out explicitly; open handoff stays external.",
-      "proof": ["worker/intent tests", "manual status/smoke check"]
-    },
     {
       "id": "F15",
       "title": "Pane run",
@@ -314,7 +302,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">46</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">53</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -328,8 +316,8 @@
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F13 · Worktree CRUD</strong> — deps=F12; first recommended G1.5 slice.</li>
-        <li><strong>Also ready:</strong> F15 pane run, F18 Zed diff, F19 layouts, F21 paths chrome, F26 workspace focus.</li>
+        <li><strong>F15 · Pane run</strong> — deps=F08; next recommended G1.5 slice after F13.</li>
+        <li><strong>Also ready:</strong> F18 Zed diff, F19 layouts, F21 paths chrome, F26 workspace focus.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -390,7 +378,7 @@
       <div class="phase active">
         <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-doing">doing</span> recommended polish; next F13</p>
+        <p><span class="st st-doing">doing</span> recommended polish; F13 done; next F15</p>
       </div>
 
       <div class="phase post">
@@ -506,10 +494,10 @@
               <td><span class="badge s">S</span></td><td>F02</td><td>t / palette</td>
             </tr>
             <tr>
-              <td>F13</td><td><span class="st st-todo">todo</span></td>
+              <td>F13</td><td><span class="st st-done">done</span></td>
               <td>Worktree CRUD</td><td class="pri-p0">P0</td><td>1.5</td>
-              <td>create/open/remove + zed</td><td>CRUD; force flagged</td>
-              <td><span class="badge m">M</span></td><td>F12</td><td></td>
+              <td>create/open/remove + Herdr handoff</td><td>CRUD; force flagged explicitly</td>
+              <td><span class="badge m">M</span></td><td>F12</td><td>done 2026-07-15; typed intents + palette/input flows + Herdr worktree.create/open/remove wrappers; remove force defaults false and requires explicit <code>--force</code>; worker refreshes list after mutations; proof=targeted herdr-client/acex-ui/acex tests + status/smoke gates</td>
             </tr>
             <tr>
               <td>F14</td><td><span class="st st-done">done</span></td>
@@ -650,6 +638,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-f13-worktree-crud">
+        <div class="meta"><span class="tag">2026-07-15</span> · F13 Worktree CRUD · agent</div>
+        <p style="margin:0">
+          Shipped G1.5 worktree CRUD: <code>Intent</code> now carries typed create/open/remove specs, the palette exposes create/open/remove forms, <code>herdr-client</code> wraps <code>worktree.create</code>/<code>worktree.open</code>/<code>worktree.remove</code>, and the worker refreshes the read-only worktree list after each mutation. Removal defaults to safe <code>force=false</code> and only sends force when the operator types <code>--force</code>; open remains a Herdr handoff instead of editor ownership inside acex.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-pr-loop-default-profile">
         <div class="meta"><span class="tag">2026-07-15</span> · PR loop default profile auth fix · agent</div>
         <p style="margin:0">
@@ -767,7 +762,7 @@
           Board + detail + Ctrl+K palette. Intents via mpsc → async worker (unary Herdr RPC).
           Keys: j/k select, f focus, r peek, s send, w/b wait, a attach, z zed, t worktrees,
           1–5 filter, / search. Start form: <code>name|cmd args</code>.
-          Smoke peeks selected pane. F16 notify is done; F13/F15/F18/F19/F21/F26 remain G1.5.
+          Smoke peeks selected pane. F13 worktree CRUD is done; F15/F18/F19/F21/F26 remain G1.5.
         </p>
       </div>
 
@@ -827,8 +822,7 @@
         <div class="meta"><span class="tag">2026-07-13</span> · risk · agent</div>
         <p style="margin:0">
           Known gaps after G1 core: schema artifact exposes more methods/events than client wrappers;
-          start presets, wait timeout auto-clear, attach variants, worktree CRUD, pane run, layouts,
-          diff UI, paths chrome, and workspace focus remain tracker-listed polish/future work.
+          pane run, layouts, diff UI, paths chrome, and workspace focus remain tracker-listed polish/future work.
         </p>
       </div>
 
@@ -865,7 +859,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>9c351ed7...</code></td>
+              <td>append-only hash-chain history; latest hash <code>f401f278...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1072,6 +1066,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F13 shipped worktree create/open/remove intents, palette flows, Herdr RPC wrappers, explicit remove <code>--force</code>, and post-mutation list refresh.</li>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
         <li><strong>2026-07-15</strong> — Changed PR loop default to inherit the authenticated OMP profile; <code>-Profile</code>/<code>--profile</code> is now opt-in for credential isolation.</li>
         <li><strong>2026-07-15</strong> — Pinned PR-loop OMP sessions to GitHub Copilot GPT-5.5 1M with high thinking to avoid Gemini quota fallback.</li>

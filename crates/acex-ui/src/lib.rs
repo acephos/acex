@@ -2,7 +2,10 @@
 
 mod palette;
 
-use acex_model::{AgentState, AttachTarget, ConnState, Intent, StartPreset, Store, WaitBadge};
+use acex_model::{
+    AgentState, AttachTarget, ConnState, Intent, StartPreset, Store, WaitBadge, WorktreeCreateSpec,
+    WorktreeOpenSpec, WorktreeRemoveSpec,
+};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -39,6 +42,9 @@ enum InputKind {
     StartAgent,
     FilterQuery,
     Notify,
+    WorktreeCreate,
+    WorktreeOpen,
+    WorktreeRemove,
 }
 
 pub struct App {
@@ -259,6 +265,24 @@ fn submit_input(app: &mut App) {
                     });
                 }
             }
+            InputKind::WorktreeCreate => match parse_worktree_create(&buffer) {
+                Some(spec) => app.send_intent(Intent::WorktreeCreate(spec)),
+                None => app.status_flash = Some("worktree create needs branch= or path=".into()),
+            },
+            InputKind::WorktreeOpen => match parse_worktree_open(&buffer) {
+                Some(spec) => app.send_intent(Intent::WorktreeOpen(spec)),
+                None => {
+                    app.status_flash =
+                        Some("worktree open needs path=, branch=, or workspace=".into())
+                }
+            },
+            InputKind::WorktreeRemove => match parse_worktree_remove(&buffer) {
+                Some(spec) => app.send_intent(Intent::WorktreeRemove(spec)),
+                None => {
+                    app.status_flash =
+                        Some("worktree remove needs workspace id; add --force explicitly".into())
+                }
+            },
         }
     }
 }
@@ -299,6 +323,126 @@ fn start_input_title(presets: &[StartPreset]) -> String {
 
 fn shellish_split(s: &str) -> Vec<String> {
     s.split_whitespace().map(|p| p.to_string()).collect()
+}
+
+fn parse_worktree_create(raw: &str) -> Option<WorktreeCreateSpec> {
+    let mut spec = WorktreeCreateSpec {
+        branch: None,
+        path: None,
+        base: None,
+        label: None,
+        cwd: None,
+        workspace_id: None,
+        focus: true,
+    };
+
+    for token in shellish_split(raw) {
+        if token == "--no-focus" {
+            spec.focus = false;
+            continue;
+        }
+        if token.starts_with('-') {
+            return None;
+        }
+        if let Some((key, value)) = token.split_once('=') {
+            let value = non_empty_value(value)?;
+            match key {
+                "branch" => spec.branch = Some(value),
+                "path" => spec.path = Some(value),
+                "base" => spec.base = Some(value),
+                "label" => spec.label = Some(value),
+                "cwd" => spec.cwd = Some(value),
+                "workspace" | "workspace_id" => spec.workspace_id = Some(value),
+                _ => return None,
+            }
+        } else if spec.branch.is_none() {
+            spec.branch = Some(token);
+        } else if spec.path.is_none() {
+            spec.path = Some(token);
+        } else if spec.base.is_none() {
+            spec.base = Some(token);
+        } else {
+            return None;
+        }
+    }
+
+    (spec.branch.is_some() || spec.path.is_some()).then_some(spec)
+}
+
+fn parse_worktree_open(raw: &str) -> Option<WorktreeOpenSpec> {
+    let mut spec = WorktreeOpenSpec {
+        branch: None,
+        path: None,
+        label: None,
+        cwd: None,
+        workspace_id: None,
+        focus: true,
+    };
+
+    for token in shellish_split(raw) {
+        if token == "--no-focus" {
+            spec.focus = false;
+            continue;
+        }
+        if token.starts_with('-') {
+            return None;
+        }
+        if let Some((key, value)) = token.split_once('=') {
+            let value = non_empty_value(value)?;
+            match key {
+                "branch" => spec.branch = Some(value),
+                "path" => spec.path = Some(value),
+                "label" => spec.label = Some(value),
+                "cwd" => spec.cwd = Some(value),
+                "workspace" | "workspace_id" => spec.workspace_id = Some(value),
+                _ => return None,
+            }
+        } else if spec.path.is_none() {
+            spec.path = Some(token);
+        } else if spec.branch.is_none() {
+            spec.branch = Some(token);
+        } else {
+            return None;
+        }
+    }
+
+    (spec.path.is_some() || spec.branch.is_some() || spec.workspace_id.is_some()).then_some(spec)
+}
+
+fn parse_worktree_remove(raw: &str) -> Option<WorktreeRemoveSpec> {
+    let mut workspace_id = None;
+    let mut force = false;
+
+    for token in shellish_split(raw) {
+        if token == "--force" {
+            force = true;
+            continue;
+        }
+        if token.starts_with('-') {
+            return None;
+        }
+        if let Some((key, value)) = token.split_once('=') {
+            let value = non_empty_value(value)?;
+            match key {
+                "workspace" | "workspace_id" | "id" => workspace_id = Some(value),
+                _ => return None,
+            }
+        } else if workspace_id.is_none() {
+            workspace_id = Some(token);
+        } else {
+            return None;
+        }
+    }
+
+    workspace_id.map(|workspace_id| WorktreeRemoveSpec {
+        workspace_id,
+        force,
+    })
+}
+
+fn non_empty_value(value: &str) -> Option<String> {
+    let value = value.trim();
+    (!value.is_empty()).then(|| value.to_string())
 }
 
 fn apply_palette_action(app: &mut App, action: PaletteAction) {
@@ -348,7 +492,28 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
         PaletteAction::AttachSession => app.send_intent(Intent::Attach {
             target: AttachTarget::Session,
         }),
-        PaletteAction::Worktrees => app.send_intent(Intent::WorktreeList),
+        PaletteAction::WorktreeList => app.send_intent(Intent::WorktreeList),
+        PaletteAction::WorktreeCreate => {
+            app.mode = Mode::Input {
+                title: "worktree create · branch=<name> [path=… base=…] [--no-focus]".into(),
+                buffer: String::new(),
+                kind: InputKind::WorktreeCreate,
+            };
+        }
+        PaletteAction::WorktreeOpen => {
+            app.mode = Mode::Input {
+                title: "worktree open · path=… or branch=… or workspace=… [--no-focus]".into(),
+                buffer: String::new(),
+                kind: InputKind::WorktreeOpen,
+            };
+        }
+        PaletteAction::WorktreeRemove => {
+            app.mode = Mode::Input {
+                title: "worktree remove · workspace id [--force] (force must be explicit)".into(),
+                buffer: String::new(),
+                kind: InputKind::WorktreeRemove,
+            };
+        }
         PaletteAction::Resnapshot => app.send_intent(Intent::Resnapshot),
         PaletteAction::RefreshAgents => app.send_intent(Intent::RefreshAgents),
         PaletteAction::Notify => {
@@ -650,6 +815,37 @@ mod tests {
         assert_eq!(name, "worker");
         assert_eq!(argv, ["cargo", "test", "-p", "acex"]);
         assert_eq!(cwd, None);
+    }
+
+    #[test]
+    fn worktree_create_parser_accepts_explicit_fields() {
+        let spec = parse_worktree_create("branch=feature path=../feature base=main --no-focus")
+            .expect("create spec");
+
+        assert_eq!(spec.branch.as_deref(), Some("feature"));
+        assert_eq!(spec.path.as_deref(), Some("../feature"));
+        assert_eq!(spec.base.as_deref(), Some("main"));
+        assert!(!spec.focus);
+    }
+
+    #[test]
+    fn worktree_open_parser_requires_handoff_target() {
+        assert!(parse_worktree_open("").is_none());
+
+        let spec = parse_worktree_open("workspace=ws-1").expect("open spec");
+        assert_eq!(spec.workspace_id.as_deref(), Some("ws-1"));
+        assert!(spec.focus);
+    }
+
+    #[test]
+    fn worktree_remove_parser_requires_explicit_force_flag() {
+        let safe = parse_worktree_remove("ws-1").expect("safe remove");
+        assert_eq!(safe.workspace_id, "ws-1");
+        assert!(!safe.force);
+
+        let forced = parse_worktree_remove("workspace=ws-1 --force").expect("forced remove");
+        assert_eq!(forced.workspace_id, "ws-1");
+        assert!(forced.force);
     }
 
     #[test]
