@@ -223,26 +223,14 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f13-worktree-crud",
+  "latest_comment_id": "2026-07-15-f15-pane-run",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "f401f2789472ce971f74f9224c3586cfb98733cdcbc0ad823dd3716f901098d0",
-    "entry_count": 12
+    "latest_hash": "b8dd171e76fae64c1d64c83f6ef16de7bc51e9aef8061401d89710224b83df4d",
+    "entry_count": 13
   },
   "next_ready": [
-    {
-      "id": "F15",
-      "title": "Pane run",
-      "status": "todo",
-      "phase": "G1.5 recommended",
-      "depends_on": ["F08"],
-      "owner": null,
-      "last_touched": null,
-      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Run a command through Herdr pane handoff and refresh peek without blocking the UI.",
-      "proof": ["worker/intent tests", "manual status/smoke check"]
-    },
     {
       "id": "F18",
       "title": "Diff in Zed",
@@ -316,8 +304,8 @@
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F15 · Pane run</strong> — deps=F08; next recommended G1.5 slice after F13.</li>
-        <li><strong>Also ready:</strong> F18 Zed diff, F19 layouts, F21 paths chrome, F26 workspace focus.</li>
+        <li><strong>F18 · Diff in Zed</strong> — deps=F17; next recommended G1.5 slice after F15.</li>
+        <li><strong>Also ready:</strong> F19 layouts, F21 paths chrome, F26 workspace focus.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -378,7 +366,7 @@
       <div class="phase active">
         <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-doing">doing</span> recommended polish; F13 done; next F15</p>
+        <p><span class="st st-doing">doing</span> recommended polish; F13 and F15 done; next F18</p>
       </div>
 
       <div class="phase post">
@@ -506,10 +494,10 @@
               <td><span class="badge m">M</span></td><td>F01+</td><td>Fuzzy palette registry</td>
             </tr>
             <tr>
-              <td>F15</td><td><span class="st st-todo">todo</span></td>
+              <td>F15</td><td><span class="st st-done">done</span></td>
               <td>Pane run</td><td class="pri-p1">P1</td><td>1.5</td>
               <td>herdr pane run</td><td>Peek updates</td>
-              <td><span class="badge s">S</span></td><td>F08</td><td></td>
+              <td><span class="badge s">S</span></td><td>F08</td><td>done 2026-07-15; palette/input flow sends <code>RunPaneSelected</code>; worker uses <code>herdr pane run &lt;pane_id&gt; &lt;command&gt;</code> handoff then refreshes peek via <code>pane.read</code>; proof=Herdr help + pane-run plan/UI tests + workspace gates/status/smoke</td>
             </tr>
             <tr>
               <td>F16</td><td><span class="st st-done">done</span></td>
@@ -638,6 +626,13 @@
 
 
 
+      <div class="comment" id="2026-07-15-f15-pane-run">
+        <div class="meta"><span class="tag">2026-07-15</span> · F15 Pane run · agent</div>
+        <p style="margin:0">
+          Shipped G1.5 pane run: the command palette now opens a selected-pane command prompt, <code>Intent::RunPaneSelected</code> carries the command, and the worker invokes the verified <code>herdr pane run &lt;pane_id&gt; &lt;command&gt;</code> handoff outside the render thread before refreshing peek with <code>pane.read</code>. This keeps execution owned by Herdr while acex remains the cockpit and updates its read-only peek cache after the handoff.
+        </p>
+      </div>
+
       <div class="comment" id="2026-07-15-f13-worktree-crud">
         <div class="meta"><span class="tag">2026-07-15</span> · F13 Worktree CRUD · agent</div>
         <p style="margin:0">
@@ -762,7 +757,7 @@
           Board + detail + Ctrl+K palette. Intents via mpsc → async worker (unary Herdr RPC).
           Keys: j/k select, f focus, r peek, s send, w/b wait, a attach, z zed, t worktrees,
           1–5 filter, / search. Start form: <code>name|cmd args</code>.
-          Smoke peeks selected pane. F13 worktree CRUD is done; F15/F18/F19/F21/F26 remain G1.5.
+          Smoke peeks selected pane. F13 worktree CRUD and F15 pane run are done; F18/F19/F21/F26 remain G1.5.
         </p>
       </div>
 
@@ -822,7 +817,7 @@
         <div class="meta"><span class="tag">2026-07-13</span> · risk · agent</div>
         <p style="margin:0">
           Known gaps after G1 core: schema artifact exposes more methods/events than client wrappers;
-          pane run, layouts, diff UI, paths chrome, and workspace focus remain tracker-listed polish/future work.
+          layouts, diff UI, paths chrome, and workspace focus remain tracker-listed polish/future work.
         </p>
       </div>
 
@@ -1066,6 +1061,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F15 shipped selected-pane command handoff through <code>herdr pane run</code> with post-run <code>pane.read</code> peek refresh.</li>
         <li><strong>2026-07-15</strong> — F13 shipped worktree create/open/remove intents, palette flows, Herdr RPC wrappers, explicit remove <code>--force</code>, and post-mutation list refresh.</li>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
         <li><strong>2026-07-15</strong> — Changed PR loop default to inherit the authenticated OMP profile; <code>-Profile</code>/<code>--profile</code> is now opt-in for credential isolation.</li>
@@ -1104,7 +1100,7 @@
             <tr><td>Health</td><td><code>ping</code> / <code>herdr status</code></td></tr>
             <tr><td>Agents</td><td><code>agent.list/get/read/send/focus/start</code></td></tr>
             <tr><td>Wait</td><td>status events + in-app wait badges</td></tr>
-            <tr><td>Peek/run</td><td><code>agent.read</code> / <code>pane.read</code>; pane run is G1.5</td></tr>
+            <tr><td>Peek/run</td><td><code>agent.read</code> / <code>pane.read</code> / <code>herdr pane run</code></td></tr>
             <tr><td>Worktrees</td><td><code>worktree.list</code> now; create/open/remove in G1.5</td></tr>
             <tr><td>Layouts</td><td><code>layout.apply</code> (new tab; no live PTY)</td></tr>
             <tr><td>Toast</td><td><code>notification.show</code></td></tr>

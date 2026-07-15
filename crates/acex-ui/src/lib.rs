@@ -40,6 +40,7 @@ enum Mode {
 enum InputKind {
     Send,
     StartAgent,
+    PaneRun,
     FilterQuery,
     Notify,
     WorktreeCreate,
@@ -252,6 +253,14 @@ fn submit_input(app: &mut App) {
                     app.send_intent(Intent::StartAgent { name, argv, cwd });
                 }
             }
+            InputKind::PaneRun => {
+                let command = buffer.trim();
+                if !command.is_empty() {
+                    app.send_intent(Intent::RunPaneSelected {
+                        command: command.to_string(),
+                    });
+                }
+            }
             InputKind::FilterQuery => {
                 let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
                 s.filter.query = buffer;
@@ -455,6 +464,13 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
                 title: "send to selected agent".into(),
                 buffer: String::new(),
                 kind: InputKind::Send,
+            };
+        }
+        PaletteAction::PaneRun => {
+            app.mode = Mode::Input {
+                title: "run command in selected pane".into(),
+                buffer: String::new(),
+                kind: InputKind::PaneRun,
             };
         }
         PaletteAction::Start => {
@@ -846,6 +862,12 @@ mod tests {
         let forced = parse_worktree_remove("workspace=ws-1 --force").expect("forced remove");
         assert_eq!(forced.workspace_id, "ws-1");
         assert!(forced.force);
+    }
+
+    #[test]
+    fn pane_run_input_rejects_blank_command() {
+        assert_eq!(non_empty_value("  "), None);
+        assert_eq!(non_empty_value("cargo test").as_deref(), Some("cargo test"));
     }
 
     #[test]
