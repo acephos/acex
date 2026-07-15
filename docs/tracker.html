@@ -223,14 +223,14 @@
   "active_phase": "Phase 2 scope selection",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f34-phase-2-scope",
+  "latest_comment_id": "2026-07-15-f34-selects-f35",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "a2846eab67e4de4c3c3a284cc63d2031cd33762b3ce54359639098b5b8506b8b",
-    "entry_count": 18
+    "latest_hash": "3efd371e778322d6dcf37c7d56530b323e05af27e301b48a02a3de9aa61c9264",
+    "entry_count": 19
   },
-  "next_ready": [{"id":"F34"}],
+  "next_ready": [{"id":"F35"}],
   "blocked": []
 }
     </script>
@@ -250,12 +250,12 @@
         <span class="soul">♥</span>
         <p style="margin:0">
           <strong>Active work:</strong> G1 usable core, G1 polish blockers, and recommended G1.5 are shipped — board, filters, palette,
-          focus/peek/send/start/wait/zed/attach/worktrees/workspaces via intent worker. Current work is the Phase 2 scope checkpoint: choose one concrete G2 slice before implementing it.
+          focus/peek/send/start/wait/zed/attach/worktrees/workspaces via intent worker. Current work is F35 richer ANSI peek polish: improve cached read rendering without live frame streaming.
         </p>
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F34</strong> — Phase 2 scope checkpoint: pick exactly one concrete G2 slice and record acceptance/deps before implementation.</li>
+        <li><strong>F35</strong> — Richer ANSI peek polish: preserve useful ANSI styles in cached peek/detail output without terminal emulation or treating peek as authority.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -321,8 +321,8 @@
 
       <div class="phase active post">
         <h3>* Phase 2 — Post-MVP (G2) · ACTIVE</h3>
-        <p class="dim">F34 scope checkpoint first, then one concrete G2 slice; optional observe, multi-session, richer ANSI, and plugin paths stay unchosen until scoped.</p>
-        <p><span class="st st-doing">doing</span> scope selection before implementation</p>
+        <p class="dim">F34 selected F35 as the first concrete G2 slice; optional observe, multi-session, and plugin paths remain unchosen.</p>
+        <p><span class="st st-doing">doing</span> F35 cached-peek ANSI polish scoped and ready</p>
       </div>
     </section>
 
@@ -565,12 +565,20 @@
               <td>done 2026-07-15; selected agent resolves before spawn; blank targets rejected; named sessions use <code>herdr session attach &lt;name&gt;</code>; default session keeps bare <code>herdr</code>; proof=Herdr help + command-plan tests + status/smoke; non-goal=embedded terminal; decisions=1,10</td>
             </tr>
             <tr>
-              <td>F34</td><td><span class="st st-doing">doing</span></td>
+              <td>F34</td><td><span class="st st-done">done</span></td>
               <td>Phase 2 scope checkpoint</td><td class="pri-p0">P0</td><td>2</td>
-              <td>tracker / GOAL</td><td>One concrete G2 slice selected with acceptance, deps, risks, and next_ready updated</td>
+              <td>tracker / GOAL</td><td>User selected F35 with acceptance, deps, risks, and next_ready updated</td>
               <td><span class="badge s">S</span></td><td>F13,F15,F18,F19,F21,F26</td>
-              <td>Define before code: do not infer optional observe, multi-session, richer ANSI, or plugin scope without a tracker row and checkpoint capsule update.</td>
+              <td>done 2026-07-15; user chose bounded richer ANSI peek polish as the first G2 slice; preserve SOUL refusals around live frames and terminal emulation.</td>
             </tr>
+            <tr>
+              <td>F35</td><td><span class="st st-todo">todo</span></td>
+              <td>Richer ANSI peek polish</td><td class="pri-p1">P1</td><td>2</td>
+              <td>agent.read / pane.read</td><td>Cached peek/detail output preserves useful ANSI styles with plain fallback; no live frame streaming</td>
+              <td><span class="badge m">M</span></td><td>F08,F30</td>
+              <td>Bounded G2 polish: keep peek a cache, avoid terminal emulation, and prefer model/UI tests around shipped rendering helpers before any live Herdr proof.</td>
+            </tr>
+
 
           </tbody>
         </table>
@@ -582,6 +590,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f34-selects-f35">
+        <div class="meta"><span class="tag">2026-07-15</span> · F34 selects F35 · agent</div>
+        <p style="margin:0">
+          Completed the Phase 2 scope checkpoint after the user selected F35 richer ANSI peek polish as the first concrete G2 implementation slice. This slice builds on existing <code>agent.read</code>/<code>pane.read</code> cached peek behavior and explicitly excludes live frame streaming, terminal emulation, multi-session chrome, and treating peek text as authority.
+        </p>
+      </div>
       <div class="comment" id="2026-07-15-f34-phase-2-scope">
         <div class="meta"><span class="tag">2026-07-15</span> · F34 Phase 2 scope checkpoint · agent</div>
         <p style="margin:0">
@@ -846,7 +861,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>a2846eab...</code></td>
+              <td>append-only hash-chain history; latest hash <code>3efd371e...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1053,6 +1068,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F34 recorded the user-selected F35 richer ANSI peek polish as the first concrete G2 slice, with live-frame streaming and terminal emulation kept out of scope.</li>
         <li><strong>2026-07-15</strong> — Added F34 as the Phase 2 scope checkpoint and made it the sole checkpoint <code>next_ready</code> item so continuation does not infer a G2 feature from prose.</li>
         <li><strong>2026-07-15</strong> — F26 shipped workspace list/focus wrappers, palette/input flows, <code>Ctrl+W</code> board scoping, and source-truth workspace rows that separate Herdr focus from local board scope.</li>
         <li><strong>2026-07-15</strong> — F21 shipped read-only paths chrome from snapshot agent/workspace/pane cwd/path values, exposing handoff targets in the detail pane before Zed/open actions.</li>
