@@ -219,18 +219,18 @@
 {
   "schema_version": 1,
   "last_updated": "2026-07-15",
-  "active_gate": "G1.5",
-  "active_phase": "G1.5 recommended",
+  "active_gate": "G2",
+  "active_phase": "Phase 2 scope selection",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f26-workspace-focus",
+  "latest_comment_id": "2026-07-15-f34-phase-2-scope",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "d9b2246d4ae74a2f7ac2bb9d3c7b9c83ffaaec24edf76e4bc8c42a52f245d469",
-    "entry_count": 17
+    "latest_hash": "a2846eab67e4de4c3c3a284cc63d2031cd33762b3ce54359639098b5b8506b8b",
+    "entry_count": 18
   },
-  "next_ready": [],
+  "next_ready": [{"id":"F34"}],
   "blocked": []
 }
     </script>
@@ -250,12 +250,12 @@
         <span class="soul">♥</span>
         <p style="margin:0">
           <strong>Active work:</strong> G1 usable core, G1 polish blockers, and recommended G1.5 are shipped — board, filters, palette,
-          focus/peek/send/start/wait/zed/attach/worktrees/workspaces via intent worker. Next work should come from a new tracker checkpoint item or explicit Phase 2 direction.
+          focus/peek/send/start/wait/zed/attach/worktrees/workspaces via intent worker. Current work is the Phase 2 scope checkpoint: choose one concrete G2 slice before implementing it.
         </p>
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>None</strong> — G1.5 recommended tracker features are done/cut after F26; add the next tracker item before another checkpoint continuation.</li>
+        <li><strong>F34</strong> — Phase 2 scope checkpoint: pick exactly one concrete G2 slice and record acceptance/deps before implementation.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -313,16 +313,16 @@
         <p><span class="st st-done">done</span> usable core + G1 polish shipped with live proof</p>
       </div>
 
-      <div class="phase active">
-        <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
+      <div class="phase">
+        <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · DONE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
         <p><span class="st st-done">done</span> recommended polish; F13, F15, F18, F19, F21, and F26 done; G1.5 recommended complete</p>
       </div>
 
-      <div class="phase post">
-        <h3>* Phase 2 — Post-MVP (G2)</h3>
-        <p class="dim">F23, F24, multi-session, richer ANSI, plugins — not required for “usable.”</p>
-        <p><span class="st st-todo">todo</span></p>
+      <div class="phase active post">
+        <h3>* Phase 2 — Post-MVP (G2) · ACTIVE</h3>
+        <p class="dim">F34 scope checkpoint first, then one concrete G2 slice; optional observe, multi-session, richer ANSI, and plugin paths stay unchosen until scoped.</p>
+        <p><span class="st st-doing">doing</span> scope selection before implementation</p>
       </div>
     </section>
 
@@ -564,6 +564,13 @@
               <td><span class="badge s">S</span></td><td>F20</td>
               <td>done 2026-07-15; selected agent resolves before spawn; blank targets rejected; named sessions use <code>herdr session attach &lt;name&gt;</code>; default session keeps bare <code>herdr</code>; proof=Herdr help + command-plan tests + status/smoke; non-goal=embedded terminal; decisions=1,10</td>
             </tr>
+            <tr>
+              <td>F34</td><td><span class="st st-doing">doing</span></td>
+              <td>Phase 2 scope checkpoint</td><td class="pri-p0">P0</td><td>2</td>
+              <td>tracker / GOAL</td><td>One concrete G2 slice selected with acceptance, deps, risks, and next_ready updated</td>
+              <td><span class="badge s">S</span></td><td>F13,F15,F18,F19,F21,F26</td>
+              <td>Define before code: do not infer optional observe, multi-session, richer ANSI, or plugin scope without a tracker row and checkpoint capsule update.</td>
+            </tr>
 
           </tbody>
         </table>
@@ -574,6 +581,13 @@
     <section id="comments" class="box">
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
+
+      <div class="comment" id="2026-07-15-f34-phase-2-scope">
+        <div class="meta"><span class="tag">2026-07-15</span> · F34 Phase 2 scope checkpoint · agent</div>
+        <p style="margin:0">
+          Promoted Phase 2 direction selection into the checkpoint itself after the capsule had no implementation-ready work. F34 is intentionally a planning checkpoint, not a hidden feature: the next continuation must pick exactly one concrete G2 slice, record its acceptance/dependencies/risks in the tracker and capsule, and only then implement that slice.
+        </p>
+      </div>
 
 
       <div class="comment" id="2026-07-15-f26-workspace-focus">
@@ -832,7 +846,7 @@
             <tr>
               <td>Checkpoint ledger</td>
               <td><code>docs/checkpoint-ledger.jsonl</code></td>
-              <td>append-only hash-chain history; latest hash <code>f401f278...</code></td>
+              <td>append-only hash-chain history; latest hash <code>a2846eab...</code></td>
             </tr>
             <tr>
               <td>Checkpoint status oracle</td>
@@ -1039,6 +1053,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — Added F34 as the Phase 2 scope checkpoint and made it the sole checkpoint <code>next_ready</code> item so continuation does not infer a G2 feature from prose.</li>
         <li><strong>2026-07-15</strong> — F26 shipped workspace list/focus wrappers, palette/input flows, <code>Ctrl+W</code> board scoping, and source-truth workspace rows that separate Herdr focus from local board scope.</li>
         <li><strong>2026-07-15</strong> — F21 shipped read-only paths chrome from snapshot agent/workspace/pane cwd/path values, exposing handoff targets in the detail pane before Zed/open actions.</li>
         <li><strong>2026-07-15</strong> — F19 shipped config/project layout presets, palette apply flow, status/checkpoint JSON exposure, and <code>layout.apply</code> handoff with explicit new-tab/no-live-PTY-preserve semantics.</li>
