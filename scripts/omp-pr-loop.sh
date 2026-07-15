@@ -7,7 +7,7 @@ max_iters=40
 prompt="continue from the last checkpoint"
 wait_for_merge=1
 auto_merge=0
-profile="omp-pr-loop"
+profile=""
 model="github-copilot/gpt-5.5-1m"
 thinking="high"
 
@@ -24,7 +24,7 @@ Options:
   --remote NAME          git remote to push to (default: origin)
   --max-iters N          loop safety cap (default: 40)
   --prompt TEXT          prompt injected into each fresh omp session
-  --profile NAME         isolated omp profile (default: omp-pr-loop)
+  --profile NAME         optional isolated omp profile (default: current authenticated profile)
   --model MODEL          OMP model to force (default: github-copilot/gpt-5.5-1m)
   --thinking LEVEL       OMP thinking level to force (default: high)
   --auto-merge           request GitHub auto-merge after opening the PR
@@ -137,7 +137,12 @@ for iter in $(seq 1 "$max_iters"); do
   rm -f "$status_before"
 
   git checkout -b "$branch"
-  omp --model "$model" --smol "$model" --slow "$model" --plan "$model" --models "$model" --thinking "$thinking" --profile "$profile" --no-session -p "$prompt"
+  omp_args=(--model "$model" --smol "$model" --slow "$model" --plan "$model" --models "$model" --thinking "$thinking")
+  if [ -n "$profile" ]; then
+    omp_args+=(--profile "$profile")
+  fi
+  omp_args+=(--no-session -p "$prompt")
+  omp "${omp_args[@]}"
 
   scripts/verify-pr.sh --base-ref "$remote/$base_branch"
 

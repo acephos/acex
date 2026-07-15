@@ -3,7 +3,7 @@ param(
     [string]$Remote = "origin",
     [int]$MaxIters = 40,
     [string]$Prompt = "continue from the last checkpoint",
-    [string]$Profile = "omp-pr-loop",
+    [string]$Profile = "",
     [string]$Model = "github-copilot/gpt-5.5-1m",
     [string]$Thinking = "high",
     [switch]$AutoMerge,
@@ -27,7 +27,12 @@ function Invoke-OmpContinuation {
         [string]$ModelName,
         [string]$ThinkingLevel
     )
-    & omp --model $ModelName --smol $ModelName --slow $ModelName --plan $ModelName --models $ModelName --thinking $ThinkingLevel --profile $ProfileName --no-session -p $PromptText
+    $ompArgs = @("--model", $ModelName, "--smol", $ModelName, "--slow", $ModelName, "--plan", $ModelName, "--models", $ModelName, "--thinking", $ThinkingLevel)
+    if ($ProfileName) {
+        $ompArgs += @("--profile", $ProfileName)
+    }
+    $ompArgs += @("--no-session", "-p", $PromptText)
+    & omp @ompArgs
     if ($LASTEXITCODE -ne 0) {
         throw "omp continuation failed ($LASTEXITCODE)"
     }
