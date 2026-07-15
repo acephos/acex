@@ -94,15 +94,15 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 
 ## Near-term objective (active)
 
-**G1.5 recommended polish is complete; Phase 2 direction selection is active:**
+**Phase 2 first implementation slice is scoped:**
 
 1. ~~Phase 0 / G0~~ · ~~Phase 1 / G1 usable core~~ (board, filters, palette, focus/peek/send/start/wait/zed/attach/worktrees)
 2. ~~G1 polish blockers~~ · start presets, wait timeout UX, and attach target variants are tightened
 3. ~~Recommended G1.5~~ · worktree CRUD, pane run, layouts, diff, notify polish, paths chrome, and workspace focus are shipped/cut in the tracker
-4. **Current:** F34 Phase 2 scope checkpoint from the tracker capsule
-5. **Next-ready IDs:** F34 from the tracker checkpoint capsule
+4. ~~F34 Phase 2 scope checkpoint~~ · user selected one concrete G2 slice before implementation
+5. **Current / next-ready:** F35 Richer ANSI peek polish from the tracker checkpoint capsule
 
-Phase 1 is usable today; the active work is choosing one concrete Phase 2 slice before implementation, not reopening G1.5.
+Phase 1 is usable today; the active work is bounded F35 cached-peek ANSI polish, not live frame streaming, terminal emulation, or multi-session chrome.
 
 ---
 
