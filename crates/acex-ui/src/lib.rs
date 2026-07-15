@@ -3,8 +3,8 @@
 mod palette;
 
 use acex_model::{
-    AgentState, AttachTarget, ConnState, Intent, LayoutPreset, StartPreset, Store, WaitBadge,
-    WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec,
+    AgentState, AttachTarget, ConnState, Intent, LayoutPreset, PathTarget, StartPreset, Store,
+    WaitBadge, WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec,
 };
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
@@ -721,6 +721,15 @@ fn draw_detail(f: &mut ratatui::Frame, area: Rect, store: &Store) {
         lines.push(Line::from("no selection"));
     }
 
+    let paths = store.path_targets();
+    if !paths.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::from("paths (read-only handoff targets):"));
+        for target in paths.iter().take(8) {
+            lines.push(Line::from(path_target_line(target)));
+        }
+    }
+
     if let Some(toast) = &store.toast {
         lines.push(Line::from(format!("toast: {toast}")));
     }
@@ -802,6 +811,17 @@ fn wait_indicator(w: &WaitBadge) -> String {
     } else {
         String::new()
     }
+}
+
+fn path_target_line(target: &PathTarget<'_>) -> String {
+    let mark = if target.selected { "▶" } else { "·" };
+    let name = match (target.label, target.id) {
+        (Some(label), Some(id)) if label != id => format!("{label} ({id})"),
+        (Some(label), _) => label.to_string(),
+        (None, Some(id)) => id.to_string(),
+        (None, None) => "-".to_string(),
+    };
+    format!("  {mark} {} {name} → {}", target.source, target.path)
 }
 
 fn now_ms() -> u64 {
@@ -1028,5 +1048,21 @@ mod tests {
         };
 
         assert_eq!(wait_indicator(&wait), " ⚠done expired");
+    }
+
+    #[test]
+    fn path_target_line_marks_selected_read_only_handoff() {
+        let row = PathTarget {
+            source: "agent",
+            id: Some("pane-1"),
+            label: Some("builder"),
+            path: "/repo/project",
+            selected: true,
+        };
+
+        assert_eq!(
+            path_target_line(&row),
+            "  ▶ agent builder (pane-1) → /repo/project"
+        );
     }
 }

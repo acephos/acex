@@ -11,6 +11,7 @@ pub use intent::{
 };
 
 use serde_json::Value;
+use std::collections::BTreeSet;
 
 pub const DEFAULT_WAIT_TIMEOUT_MS: u64 = 30_000;
 
@@ -30,6 +31,16 @@ pub struct BoardFilter {
     pub state: Option<AgentState>,
     pub workspace: Option<String>,
     pub query: String,
+}
+
+/// Read-only cwd/path target surfaced from Herdr snapshots for handoffs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PathTarget<'a> {
+    pub source: &'static str,
+    pub id: Option<&'a str>,
+    pub label: Option<&'a str>,
+    pub path: &'a str,
+    pub selected: bool,
 }
 
 /// Application store reduced from Herdr truth.
@@ -337,6 +348,45 @@ impl Store {
         self.peek_busy = false;
     }
 
+    pub fn path_targets(&self) -> Vec<PathTarget<'_>> {
+        let mut rows = Vec::new();
+        let mut seen = BTreeSet::new();
+
+        if let Some(index) = self.selected {
+            if let Some(agent) = self.agents.get(index) {
+                push_agent_path(&mut rows, &mut seen, agent, true);
+            }
+        }
+        for (index, agent) in self.agents.iter().enumerate() {
+            if self.selected == Some(index) {
+                continue;
+            }
+            push_agent_path(&mut rows, &mut seen, agent, false);
+        }
+        for workspace in &self.snapshot.workspaces {
+            push_json_path(
+                &mut rows,
+                &mut seen,
+                "workspace",
+                workspace,
+                &["workspace_id", "id"],
+                &["label", "name"],
+            );
+        }
+        for pane in &self.snapshot.panes {
+            push_json_path(
+                &mut rows,
+                &mut seen,
+                "pane",
+                pane,
+                &["pane_id", "id"],
+                &["label", "display_agent", "agent"],
+            );
+        }
+
+        rows
+    }
+
     pub fn filtered_agents(&self) -> Vec<(usize, &AgentSummary)> {
         self.agents
             .iter()
@@ -511,6 +561,60 @@ impl Store {
             }
         }
     }
+}
+
+fn push_agent_path<'a>(
+    rows: &mut Vec<PathTarget<'a>>,
+    seen: &mut BTreeSet<&'a str>,
+    agent: &'a AgentSummary,
+    selected: bool,
+) {
+    let Some(path) = non_blank_str(agent.cwd.as_deref()) else {
+        return;
+    };
+    if !seen.insert(path) {
+        return;
+    }
+    rows.push(PathTarget {
+        source: "agent",
+        id: Some(agent.pane_id.as_deref().unwrap_or(agent.id.as_str())),
+        label: agent.name.as_deref(),
+        path,
+        selected,
+    });
+}
+
+fn push_json_path<'a>(
+    rows: &mut Vec<PathTarget<'a>>,
+    seen: &mut BTreeSet<&'a str>,
+    source: &'static str,
+    item: &'a Value,
+    id_keys: &[&str],
+    label_keys: &[&str],
+) {
+    let Some(path) = value_str(item, &["cwd", "path"]) else {
+        return;
+    };
+    if !seen.insert(path) {
+        return;
+    }
+    rows.push(PathTarget {
+        source,
+        id: value_str(item, id_keys),
+        label: value_str(item, label_keys),
+        path,
+        selected: false,
+    });
+}
+
+fn value_str<'a>(item: &'a Value, keys: &[&str]) -> Option<&'a str> {
+    keys.iter()
+        .filter_map(|key| item.get(*key).and_then(|v| v.as_str()))
+        .find(|s| !s.trim().is_empty())
+}
+
+fn non_blank_str(value: Option<&str>) -> Option<&str> {
+    value.filter(|s| !s.trim().is_empty())
 }
 
 fn upsert_by_id(list: &mut Vec<Value>, item: &Value, id_key: &str) {
@@ -756,6 +860,52 @@ mod tests {
         let second = s.selected_target().unwrap();
         assert_ne!(first, second);
         assert!(s.selected_agent().unwrap().state == AgentState::Working);
+    }
+
+    #[test]
+    fn path_targets_prefer_selected_agent_and_dedupe_snapshot_paths() {
+        let s = Store {
+            selected: Some(1),
+            agents: vec![
+                AgentSummary {
+                    id: "agent-a".into(),
+                    pane_id: Some("pane-a".into()),
+                    cwd: Some("/repo/a".into()),
+                    ..Default::default()
+                },
+                AgentSummary {
+                    id: "agent-b".into(),
+                    name: Some("builder".into()),
+                    pane_id: Some("pane-b".into()),
+                    cwd: Some("/repo/b".into()),
+                    ..Default::default()
+                },
+            ],
+            snapshot: SessionSnapshot {
+                workspaces: vec![
+                    json!({"workspace_id":"ws-b", "label":"same", "cwd":"/repo/b"}),
+                    json!({"workspace_id":"ws-c", "label":"other", "path":"/repo/c"}),
+                ],
+                panes: vec![json!({"pane_id":"pane-d", "label":"logs", "cwd":"/repo/d"})],
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let rows = s.path_targets();
+
+        assert_eq!(rows.len(), 4);
+        assert_eq!(rows[0].source, "agent");
+        assert_eq!(rows[0].id, Some("pane-b"));
+        assert_eq!(rows[0].label, Some("builder"));
+        assert_eq!(rows[0].path, "/repo/b");
+        assert!(rows[0].selected);
+        assert_eq!(rows[1].path, "/repo/a");
+        assert_eq!(rows[2].source, "workspace");
+        assert_eq!(rows[2].id, Some("ws-c"));
+        assert_eq!(rows[2].path, "/repo/c");
+        assert_eq!(rows[3].source, "pane");
+        assert_eq!(rows[3].id, Some("pane-d"));
     }
 
     #[test]

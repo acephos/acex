@@ -223,26 +223,14 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f19-layout-presets",
+  "latest_comment_id": "2026-07-15-f21-paths-chrome",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "8a017871f550309e8ea0e27680daba69eafaf913cb780097b86d300831d9675c",
-    "entry_count": 15
+    "latest_hash": "e8ffdcd867f785d42a299dfc4d4f140d7da916db7750b72c2f4e19258fe87bbf",
+    "entry_count": 16
   },
   "next_ready": [
-    {
-      "id": "F21",
-      "title": "Paths chrome",
-      "status": "todo",
-      "phase": "G1.5 recommended",
-      "depends_on": ["F17"],
-      "owner": null,
-      "last_touched": null,
-      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Snapshot cwd paths are visible as read-only handoff targets.",
-      "proof": ["UI rendering tests", "manual status/smoke check"]
-    },
     {
       "id": "F26",
       "title": "Workspace focus",
@@ -266,7 +254,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">65</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">67</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -280,8 +268,7 @@
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F21 · Paths chrome</strong> — deps=F17; next recommended G1.5 slice after F19.</li>
-        <li><strong>Also ready:</strong> F26 workspace focus.</li>
+        <li><strong>F26 · Workspace focus</strong> — deps=F02; next recommended G1.5 slice after F21.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -342,7 +329,7 @@
       <div class="phase active">
         <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-doing">doing</span> recommended polish; F13, F15, F18, and F19 done; next F21</p>
+        <p><span class="st st-doing">doing</span> recommended polish; F13, F15, F18, F19, and F21 done; next F26</p>
       </div>
 
       <div class="phase post">
@@ -506,10 +493,10 @@
               <td><span class="badge s">S</span></td><td>F01</td><td>a / palette</td>
             </tr>
             <tr>
-              <td>F21</td><td><span class="st st-todo">todo</span></td>
+              <td>F21</td><td><span class="st st-done">done</span></td>
               <td>Paths chrome</td><td class="pri-p1">P1</td><td>1.5</td>
               <td>snapshot cwds</td><td>RO list → Zed</td>
-              <td><span class="badge s">S</span></td><td>F17</td><td></td>
+              <td><span class="badge s">S</span></td><td>F17</td><td>done 2026-07-15; detail pane renders deduped read-only handoff targets from selected/all agent cwd plus snapshot workspace/pane cwd/path fields; proof=path target model/UI tests + workspace gates/status/smoke</td>
             </tr>
             <tr>
               <td>F22</td><td><span class="st st-done">done</span></td>
@@ -601,6 +588,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f21-paths-chrome">
+        <div class="meta"><span class="tag">2026-07-15</span> · F21 Paths chrome · agent</div>
+        <p style="margin:0">
+          Shipped G1.5 paths chrome: the model now projects Herdr snapshot agent, workspace, and pane <code>cwd</code>/<code>path</code> values into deduplicated read-only handoff targets, preferring the selected agent first, and the detail pane renders those targets before peek/worktree data. This makes the existing Zed handoff path resolution visible without adding a second source of truth or mutating Herdr state.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f19-layout-presets">
         <div class="meta"><span class="tag">2026-07-15</span> · F19 Layout presets · agent</div>
@@ -1051,6 +1045,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F21 shipped read-only paths chrome from snapshot agent/workspace/pane cwd/path values, exposing handoff targets in the detail pane before Zed/open actions.</li>
         <li><strong>2026-07-15</strong> — F19 shipped config/project layout presets, palette apply flow, status/checkpoint JSON exposure, and <code>layout.apply</code> handoff with explicit new-tab/no-live-PTY-preserve semantics.</li>
         <li><strong>2026-07-15</strong> — F18 shipped command-palette Zed diff with exact two-path input and worker-side existing-path validation before editor bridge handoff.</li>
         <li><strong>2026-07-15</strong> — F15 shipped selected-pane command handoff through <code>herdr pane run</code> with post-run <code>pane.read</code> peek refresh.</li>
