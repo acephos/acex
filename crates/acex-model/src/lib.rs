@@ -6,8 +6,8 @@ mod intent;
 
 pub use herdr_types::{AgentState, AgentSummary, Event, SessionSnapshot};
 pub use intent::{
-    AttachTarget, Intent, StartPreset, WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec,
-    ZedOpenMode,
+    AttachTarget, Intent, LayoutNode, LayoutPreset, SplitDirection, StartPreset,
+    WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec, ZedOpenMode,
 };
 
 use serde_json::Value;

@@ -223,26 +223,14 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f18-zed-diff",
+  "latest_comment_id": "2026-07-15-f19-layout-presets",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "8e6d0932babc5cde1f2d6be42d5313713eb526217494f33bd3b1813349f4dd0a",
-    "entry_count": 14
+    "latest_hash": "8a017871f550309e8ea0e27680daba69eafaf913cb780097b86d300831d9675c",
+    "entry_count": 15
   },
   "next_ready": [
-    {
-      "id": "F19",
-      "title": "Layout presets",
-      "status": "todo",
-      "phase": "G1.5 recommended",
-      "depends_on": ["F02"],
-      "owner": null,
-      "last_touched": null,
-      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Layout apply is explicit that Herdr opens a new tab and does not preserve live PTYs.",
-      "proof": ["worker/intent tests", "manual status/smoke check"]
-    },
     {
       "id": "F21",
       "title": "Paths chrome",
@@ -278,7 +266,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">60</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">65</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -292,8 +280,8 @@
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F19 · Layout presets</strong> — deps=F02; next recommended G1.5 slice after F18.</li>
-        <li><strong>Also ready:</strong> F21 paths chrome, F26 workspace focus.</li>
+        <li><strong>F21 · Paths chrome</strong> — deps=F17; next recommended G1.5 slice after F19.</li>
+        <li><strong>Also ready:</strong> F26 workspace focus.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -354,7 +342,7 @@
       <div class="phase active">
         <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-doing">doing</span> recommended polish; F13, F15, and F18 done; next F19</p>
+        <p><span class="st st-doing">doing</span> recommended polish; F13, F15, F18, and F19 done; next F21</p>
       </div>
 
       <div class="phase post">
@@ -506,10 +494,10 @@
               <td><span class="badge s">S</span></td><td>F17</td><td>Palette diff prompt; worker validates paths before bridge handoff</td>
             </tr>
             <tr>
-              <td>F19</td><td><span class="st st-todo">todo</span></td>
+              <td>F19</td><td><span class="st st-done">done</span></td>
               <td>Layout presets</td><td class="pri-p1">P1</td><td>1.5</td>
-              <td>layout.apply</td><td>Warn new tab / no live PTY</td>
-              <td><span class="badge m">M</span></td><td>F02</td><td></td>
+              <td>layout.apply</td><td>Explicit new tab / no live PTY preserve</td>
+              <td><span class="badge m">M</span></td><td>F02</td><td>Config presets; palette apply; worker sends <code>tab_id=null</code></td>
             </tr>
             <tr>
               <td>F20</td><td><span class="st st-done">done</span></td>
@@ -613,6 +601,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f19-layout-presets">
+        <div class="meta"><span class="tag">2026-07-15</span> · F19 Layout presets · agent</div>
+        <p style="margin:0">
+          Shipped G1.5 layout presets: <code>config.toml</code> can now declare <code>[[layout_presets]]</code> roots matching Herdr <code>LayoutNode</code>, project <code>.acex/config.toml</code> overrides user layout presets, status/checkpoint JSON exposes the configured presets, the command palette prompts for a preset, and the worker dispatches <code>layout.apply</code> with <code>tab_id=null</code>. This makes the new-tab/no-live-PTY-preserve contract explicit instead of implying an in-place terminal layout mutation.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f18-zed-diff">
         <div class="meta"><span class="tag">2026-07-15</span> · F18 Diff in Zed · agent</div>
@@ -752,7 +747,7 @@
           Board + detail + Ctrl+K palette. Intents via mpsc → async worker (unary Herdr RPC).
           Keys: j/k select, f focus, r peek, s send, w/b wait, a attach, z zed, t worktrees,
           1–5 filter, / search. Start form: <code>name|cmd args</code>.
-          Smoke peeks selected pane. F13 worktree CRUD, F15 pane run, and F18 Zed diff are done; F19/F21/F26 remain G1.5.
+          Smoke peeks selected pane. F13 worktree CRUD, F15 pane run, F18 Zed diff, and F19 layout presets are done; F21/F26 remain G1.5.
         </p>
       </div>
 
@@ -1056,6 +1051,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F19 shipped config/project layout presets, palette apply flow, status/checkpoint JSON exposure, and <code>layout.apply</code> handoff with explicit new-tab/no-live-PTY-preserve semantics.</li>
         <li><strong>2026-07-15</strong> — F18 shipped command-palette Zed diff with exact two-path input and worker-side existing-path validation before editor bridge handoff.</li>
         <li><strong>2026-07-15</strong> — F15 shipped selected-pane command handoff through <code>herdr pane run</code> with post-run <code>pane.read</code> peek refresh.</li>
         <li><strong>2026-07-15</strong> — F13 shipped worktree create/open/remove intents, palette flows, Herdr RPC wrappers, explicit remove <code>--force</code>, and post-mutation list refresh.</li>

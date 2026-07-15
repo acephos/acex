@@ -172,8 +172,12 @@ async fn main() -> anyhow::Result<()> {
         drop(intent_rx);
     }
 
-    let app =
-        App::with_shared_and_presets(Arc::clone(&store), intent_tx, cfg.start_presets.clone());
+    let app = App::with_shared_and_presets(
+        Arc::clone(&store),
+        intent_tx,
+        cfg.start_presets.clone(),
+        cfg.layout_presets.clone(),
+    );
     let quit_ui = Arc::clone(&quit);
     let ui = tokio::task::spawn_blocking(move || {
         let r = acex_ui::run(app);
@@ -270,7 +274,8 @@ fn print_status_json(store: &Store, discovery: &DiscoveryReport, offline_flag: b
             "diagnostics": diagnostics,
         },
         "config": {
-            "start_presets": &cfg.start_presets
+            "start_presets": &cfg.start_presets,
+            "layout_presets": &cfg.layout_presets
         },
         "seams": [
             "Intent",

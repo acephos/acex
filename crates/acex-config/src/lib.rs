@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use acex_model::StartPreset;
+use acex_model::{LayoutPreset, StartPreset};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +21,8 @@ pub struct Config {
     pub peek_lines: u32,
     /// Agent start presets loaded from config.toml.
     pub start_presets: Vec<StartPreset>,
+    /// Layout presets loaded from user config.toml and optional project .acex/config.toml.
+    pub layout_presets: Vec<LayoutPreset>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -31,8 +33,8 @@ struct FileConfig {
     leave_server_on_exit: Option<bool>,
     editor_bin: Option<String>,
     peek_lines: Option<u32>,
-    #[serde(default)]
-    start_presets: Vec<StartPreset>,
+    start_presets: Option<Vec<StartPreset>>,
+    layout_presets: Option<Vec<LayoutPreset>>,
 }
 
 impl Default for Config {
@@ -45,18 +47,28 @@ impl Default for Config {
             editor_bin: "zed".into(),
             peek_lines: 80,
             start_presets: Vec::new(),
+            layout_presets: Vec::new(),
         }
     }
 }
 
 impl Config {
     pub fn load() -> Self {
-        Self::load_from_dir(Self::config_dir())
+        let project_root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        Self::load_from_dirs(Self::config_dir(), project_root)
     }
 
     pub fn load_from_dir(config_dir: impl AsRef<Path>) -> Self {
         let mut c = Self::default();
         c.apply_file_config(config_dir.as_ref().join("config.toml"));
+        c.apply_env();
+        c
+    }
+
+    pub fn load_from_dirs(config_dir: impl AsRef<Path>, project_root: impl AsRef<Path>) -> Self {
+        let mut c = Self::default();
+        c.apply_file_config(config_dir.as_ref().join("config.toml"));
+        c.apply_file_config(project_root.as_ref().join(".acex").join("config.toml"));
         c.apply_env();
         c
     }
@@ -87,7 +99,12 @@ impl Config {
         if let Some(peek_lines) = file.peek_lines {
             self.peek_lines = peek_lines;
         }
-        self.start_presets = file.start_presets;
+        if let Some(start_presets) = file.start_presets {
+            self.start_presets = start_presets;
+        }
+        if let Some(layout_presets) = file.layout_presets {
+            self.layout_presets = layout_presets;
+        }
     }
 
     fn apply_env(&mut self) {
@@ -151,6 +168,59 @@ mod tests {
         assert_eq!(cfg.start_presets[0].name, "reviewer");
         assert_eq!(cfg.start_presets[0].argv, ["omp", "--agent", "reviewer"]);
         assert_eq!(cfg.start_presets[0].cwd.as_deref(), Some("crates"));
+
+        assert!(cfg.layout_presets.is_empty());
+    }
+
+    #[test]
+    fn loads_layout_presets_from_project_override() {
+        let user = tempdir().unwrap();
+        let project = tempdir().unwrap();
+        std::fs::create_dir(project.path().join(".acex")).unwrap();
+        std::fs::write(
+            user.path().join("config.toml"),
+            r#"
+                [[layout_presets]]
+                id = "single"
+                name = "Single"
+
+                [layout_presets.root]
+                type = "pane"
+                label = "user"
+            "#,
+        )
+        .unwrap();
+        std::fs::write(
+            project.path().join(".acex").join("config.toml"),
+            r#"
+                [[layout_presets]]
+                id = "dual"
+                name = "Dual"
+                tab_label = "Dual"
+                focus = true
+
+                [layout_presets.root]
+                type = "split"
+                direction = "right"
+                ratio = 0.5
+
+                [layout_presets.root.first]
+                type = "pane"
+                label = "left"
+
+                [layout_presets.root.second]
+                type = "pane"
+                label = "right"
+            "#,
+        )
+        .unwrap();
+
+        let cfg = Config::load_from_dirs(user.path(), project.path());
+
+        assert_eq!(cfg.layout_presets.len(), 1);
+        assert_eq!(cfg.layout_presets[0].id, "dual");
+        assert_eq!(cfg.layout_presets[0].tab_label.as_deref(), Some("Dual"));
+        assert!(cfg.layout_presets[0].focus);
     }
 
     #[test]
