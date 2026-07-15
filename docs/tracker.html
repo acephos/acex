@@ -223,12 +223,12 @@
   "active_phase": "G2 polish",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f35-ansi-peek",
+  "latest_comment_id": "2026-07-15-f36-activity-age",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "32f30dcd007a231f4020f2a1c2ecbb4b9c1eeb1bd877dcbcca1cd469a439bc24",
-    "entry_count": 20
+    "latest_hash": "6a7b1abf710f9e0d5e9834a6795a68f97d31b4a67f60a7c0b59345e5ca91cdff",
+    "entry_count": 21
   },
   "next_ready": [],
   "blocked": []
@@ -241,7 +241,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G2</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">polish</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">83</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">86</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -249,7 +249,7 @@
       <div class="say" style="margin-top:16px">
         <span class="soul">♥</span>
         <p style="margin:0">
-          <strong>Active work:</strong> G1 usable core, G1 polish blockers, recommended G1.5, and F35 richer ANSI peek polish are shipped.
+          <strong>Active work:</strong> G1 usable core, G1 polish blockers, recommended G1.5, F35 richer ANSI peek polish, and F36 board activity age polish are shipped.
           The next continuation should choose and record one concrete G2 slice in the tracker checkpoint capsule before implementation.
         </p>
       </div>
@@ -321,8 +321,8 @@
 
       <div class="phase active post">
         <h3>* Phase 2 — Post-MVP (G2) · ACTIVE</h3>
-        <p class="dim">F34 selected F35 as the first concrete G2 slice; optional observe, multi-session, and plugin paths remain unchosen.</p>
-        <p><span class="st st-doing">doing</span> F35 cached-peek ANSI polish scoped and ready</p>
+        <p class="dim">F36 board activity age polish is shipped; optional observe, multi-session, and plugin paths remain unchosen.</p>
+        <p><span class="st st-doing">doing</span> waiting for the next concrete G2 slice selection</p>
       </div>
     </section>
 
@@ -578,6 +578,13 @@
               <td><span class="badge m">M</span></td><td>F08,F30</td>
               <td>done 2026-07-15; read RPCs request <code>format=ansi</code> with <code>strip_ansi=false</code> for cached peeks, the model preserves raw ANSI text, and the UI renders bounded SGR colors/modifiers while dropping unsupported controls; proof=83 workspace tests plus targeted ANSI/model/client tests.</td>
             </tr>
+            <tr>
+              <td>F36</td><td><span class="st st-done">done</span></td>
+              <td>Board activity age polish</td><td class="pri-p1">P1</td><td>2</td>
+              <td>agent activity signals</td><td>Board/detail show bounded last-signal and stale cues from existing state</td>
+              <td><span class="badge s">S</span></td><td>F06,F30,F35</td>
+              <td>done 2026-07-15; model tracks per-agent last signal from snapshots, agent.list merges, and received status/pane events; board and detail render bounded event-age/stale cues without polling, timestamp timers, resnapshot churn, live frame streaming, terminal emulation, or peek-as-truth; proof=86 workspace tests plus targeted model/UI activity tests.</td>
+            </tr>
 
 
           </tbody>
@@ -590,6 +597,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f36-activity-age">
+        <div class="meta"><span class="tag">2026-07-15</span> · F36 Board activity age polish · agent</div>
+        <p style="margin:0">
+          Shipped F36 board activity age polish without adding polling or timestamp-driven redraw churn: the pure store now records per-agent last signals from snapshots, agent-list merges, and received pane/status events, then the board and detail pane render bounded event-age/stale cues. Activity remains a control-plane freshness hint only; Herdr and filesystem state stay authoritative, and peek text is not treated as truth.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f35-ansi-peek">
         <div class="meta"><span class="tag">2026-07-15</span> · F35 Richer ANSI peek polish · agent</div>
@@ -1075,6 +1089,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F36 shipped board activity age polish: per-agent last-signal tracking from existing store inputs plus bounded board/detail stale cues, with no polling, live frame streaming, terminal emulation, or peek-as-truth.</li>
         <li><strong>2026-07-15</strong> — F35 shipped cached ANSI peek polish: read RPCs request ANSI payloads, the model preserves raw cached text, and the UI renders bounded SGR styles with plain/control-safe fallback.</li>
         <li><strong>2026-07-15</strong> — F34 recorded the user-selected F35 richer ANSI peek polish as the first concrete G2 slice, with live-frame streaming and terminal emulation kept out of scope.</li>
         <li><strong>2026-07-15</strong> — Added F34 as the Phase 2 scope checkpoint and made it the sole checkpoint <code>next_ready</code> item so continuation does not infer a G2 feature from prose.</li>

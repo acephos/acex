@@ -51,6 +51,25 @@ pub struct WorkspaceTarget<'a> {
     pub scoped: bool,
 }
 
+pub const AGENT_ACTIVITY_STALE_EVENTS: u64 = 10;
+pub const AGENT_ACTIVITY_DISPLAY_CAP_EVENTS: u64 = 99;
+
+/// Last source signal observed for an agent row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AgentActivity {
+    pub target: String,
+    pub last_event_count: u64,
+    pub last_signal: String,
+}
+
+/// Event-age view for board/detail activity badges.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AgentActivityAge<'a> {
+    pub events_since: u64,
+    pub stale: bool,
+    pub signal: &'a str,
+}
+
 /// Application store reduced from Herdr truth.
 #[derive(Debug, Clone, Default)]
 pub struct Store {
@@ -89,6 +108,8 @@ pub struct Store {
     /// Toast-like action feedback (not Herdr notification).
     pub toast: Option<String>,
     pub peek_line_limit: u32,
+    /// Per-agent last signal, derived only from snapshots/list rows/events we already receive.
+    pub agent_activity: Vec<AgentActivity>,
 }
 
 /// Non-blocking wait tracker for a pane/agent.
@@ -125,6 +146,7 @@ impl Store {
         if self.agents.is_empty() {
             self.agents = agents_from_panes(&snap.panes);
         }
+        self.reset_agent_activity(if from_reconnect { "resync" } else { "snapshot" });
         self.snapshot = snap;
         self.live = true;
         self.conn = ConnState::Live;
@@ -200,6 +222,7 @@ impl Store {
                     self.workspace_count = self.snapshot.workspaces.len();
                     // Drop agents in that workspace if annotated, and clear stale board scope.
                     self.agents.retain(|a| agent_workspace_id(a) != Some(id));
+                    self.prune_agent_activity();
                     if self.filter.workspace.as_deref() == Some(id) {
                         self.filter.workspace = None;
                     }
@@ -251,6 +274,7 @@ impl Store {
                     upsert_by_id(&mut self.snapshot.panes, pane, "pane_id");
                     self.pane_count = self.snapshot.panes.len();
                     if let Some(row) = agent_from_pane(pane) {
+                        self.note_agent_row_activity(&row, kind.as_str());
                         upsert_agent(&mut self.agents, row);
                     }
                 } else {
@@ -270,6 +294,7 @@ impl Store {
                     self.pane_count = self.snapshot.panes.len();
                     self.agents
                         .retain(|a| a.pane_id.as_deref() != Some(id) && a.id != id);
+                    self.prune_agent_activity();
                 } else {
                     self.pane_count = self.pane_count.saturating_sub(1);
                 }
@@ -279,6 +304,7 @@ impl Store {
                     upsert_by_id(&mut self.snapshot.panes, pane, "pane_id");
                     self.pane_count = self.snapshot.panes.len();
                     if let Some(row) = agent_from_pane(pane) {
+                        self.note_agent_row_activity(&row, kind.as_str());
                         upsert_agent(&mut self.agents, row);
                     }
                 }
@@ -322,6 +348,7 @@ impl Store {
                             ..Default::default()
                         });
                     }
+                    self.note_agent_activity(&pid, kind.as_str());
                     self.resolve_waits_for(&pid, state);
                     // Mirror into pane list if present.
                     for p in &mut self.snapshot.panes {
@@ -479,6 +506,72 @@ impl Store {
             .map(|a| a.pane_id.clone().unwrap_or_else(|| a.id.clone()))
     }
 
+    pub fn agent_activity_age(&self, agent: &AgentSummary) -> Option<AgentActivityAge<'_>> {
+        let target = agent_target(agent);
+        let activity = self.agent_activity.iter().find(|activity| {
+            activity.target == target
+                || activity.target == agent.id
+                || agent.pane_id.as_deref() == Some(activity.target.as_str())
+        })?;
+        let events_since = self.event_count.saturating_sub(activity.last_event_count);
+        Some(AgentActivityAge {
+            events_since,
+            stale: events_since >= AGENT_ACTIVITY_STALE_EVENTS,
+            signal: activity.last_signal.as_str(),
+        })
+    }
+
+    fn reset_agent_activity(&mut self, signal: &str) {
+        self.agent_activity.clear();
+        let targets = self
+            .agents
+            .iter()
+            .map(agent_target)
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        for target in targets {
+            self.note_agent_activity(&target, signal);
+        }
+    }
+
+    fn note_agent_row_activity(&mut self, agent: &AgentSummary, signal: &str) {
+        let target = agent_target(agent).to_string();
+        self.note_agent_activity(&target, signal);
+    }
+
+    fn note_agent_activity(&mut self, target: &str, signal: &str) {
+        if target.trim().is_empty() {
+            return;
+        }
+        if let Some(activity) = self
+            .agent_activity
+            .iter_mut()
+            .find(|activity| activity.target == target)
+        {
+            activity.last_event_count = self.event_count;
+            activity.last_signal.clear();
+            activity.last_signal.push_str(signal);
+            return;
+        }
+        self.agent_activity.push(AgentActivity {
+            target: target.to_string(),
+            last_event_count: self.event_count,
+            last_signal: signal.to_string(),
+        });
+    }
+
+    fn prune_agent_activity(&mut self) {
+        let mut live = BTreeSet::new();
+        for agent in &self.agents {
+            live.insert(agent.id.clone());
+            if let Some(pane_id) = &agent.pane_id {
+                live.insert(pane_id.clone());
+            }
+        }
+        self.agent_activity
+            .retain(|activity| live.contains(&activity.target));
+    }
+
     /// Move selection within the filtered view; stores index into full `agents`.
     pub fn select_delta(&mut self, delta: i32) {
         let rows = self.filtered_agents();
@@ -581,9 +674,11 @@ impl Store {
     pub fn merge_agent_values(&mut self, rows: &[Value]) {
         for row in rows {
             if let Some(summary) = agent_from_list_row(row) {
+                self.note_agent_row_activity(&summary, "agent.list");
                 upsert_agent(&mut self.agents, summary);
             }
         }
+        self.prune_agent_activity();
         self.ensure_selection();
     }
 
@@ -711,6 +806,10 @@ fn agent_workspace_id(agent: &AgentSummary) -> Option<&str> {
         .get("workspace_id")
         .and_then(|v| v.as_str())
         .and_then(|s| (!s.trim().is_empty()).then_some(s))
+}
+
+fn agent_target(agent: &AgentSummary) -> &str {
+    agent.pane_id.as_deref().unwrap_or(agent.id.as_str())
 }
 
 fn workspace_exists(workspaces: &[Value], id: &str) -> bool {
@@ -891,6 +990,65 @@ mod tests {
         s.apply_event(&ev);
         assert_eq!(s.agents[0].state, AgentState::Done);
         assert_eq!(s.event_count, 1);
+    }
+
+    #[test]
+    fn activity_age_tracks_snapshot_and_stale_event_distance() {
+        let mut s = Store::default();
+        s.apply_snapshot(SessionSnapshot {
+            panes: vec![json!({"pane_id":"w1:p1","agent_status":"idle"})],
+            ..Default::default()
+        });
+
+        let age = s.agent_activity_age(&s.agents[0]).expect("activity age");
+        assert_eq!(age.events_since, 0);
+        assert_eq!(age.signal, "snapshot");
+        assert!(!age.stale);
+
+        for n in 0..AGENT_ACTIVITY_STALE_EVENTS {
+            s.apply_event(&Event {
+                event: "workspace_created".into(),
+                data: json!({"workspace": {"workspace_id": format!("ws-{n}")}}),
+                extra: Default::default(),
+            });
+        }
+
+        let age = s.agent_activity_age(&s.agents[0]).expect("activity age");
+        assert_eq!(age.events_since, AGENT_ACTIVITY_STALE_EVENTS);
+        assert!(age.stale);
+    }
+
+    #[test]
+    fn status_event_refreshes_agent_activity_age() {
+        let mut s = Store {
+            agents: vec![AgentSummary {
+                id: "w1:p1".into(),
+                pane_id: Some("w1:p1".into()),
+                state: AgentState::Working,
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        s.reset_agent_activity("seed");
+        for n in 0..3 {
+            s.apply_event(&Event {
+                event: "workspace_created".into(),
+                data: json!({"workspace": {"workspace_id": format!("ws-{n}")}}),
+                extra: Default::default(),
+            });
+        }
+        assert_eq!(s.agent_activity_age(&s.agents[0]).unwrap().events_since, 3);
+
+        s.apply_event(&Event {
+            event: "pane_agent_status_changed".into(),
+            data: json!({"pane_id":"w1:p1","agent_status":"done"}),
+            extra: Default::default(),
+        });
+
+        let age = s.agent_activity_age(&s.agents[0]).expect("activity age");
+        assert_eq!(age.events_since, 0);
+        assert_eq!(age.signal, "pane_agent_status_changed");
+        assert!(!age.stale);
     }
 
     #[test]
