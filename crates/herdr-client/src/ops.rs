@@ -4,6 +4,58 @@ use serde_json::{json, Value};
 
 use crate::{HerdrClient, Result, Transport};
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct WorktreeCreateRequest<'a> {
+    pub branch: Option<&'a str>,
+    pub path: Option<&'a str>,
+    pub base: Option<&'a str>,
+    pub label: Option<&'a str>,
+    pub cwd: Option<&'a str>,
+    pub workspace_id: Option<&'a str>,
+    pub focus: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct WorktreeOpenRequest<'a> {
+    pub branch: Option<&'a str>,
+    pub path: Option<&'a str>,
+    pub label: Option<&'a str>,
+    pub cwd: Option<&'a str>,
+    pub workspace_id: Option<&'a str>,
+    pub focus: bool,
+}
+
+pub fn worktree_create_params(req: WorktreeCreateRequest<'_>) -> Value {
+    let mut params = json!({ "focus": req.focus });
+    insert_optional_str(&mut params, "branch", req.branch);
+    insert_optional_str(&mut params, "path", req.path);
+    insert_optional_str(&mut params, "base", req.base);
+    insert_optional_str(&mut params, "label", req.label);
+    insert_optional_str(&mut params, "cwd", req.cwd);
+    insert_optional_str(&mut params, "workspace_id", req.workspace_id);
+    params
+}
+
+pub fn worktree_open_params(req: WorktreeOpenRequest<'_>) -> Value {
+    let mut params = json!({ "focus": req.focus });
+    insert_optional_str(&mut params, "branch", req.branch);
+    insert_optional_str(&mut params, "path", req.path);
+    insert_optional_str(&mut params, "label", req.label);
+    insert_optional_str(&mut params, "cwd", req.cwd);
+    insert_optional_str(&mut params, "workspace_id", req.workspace_id);
+    params
+}
+
+pub fn worktree_remove_params(workspace_id: &str, force: bool) -> Value {
+    json!({ "workspace_id": workspace_id, "force": force })
+}
+
+fn insert_optional_str(params: &mut Value, key: &str, value: Option<&str>) {
+    if let Some(v) = value {
+        params[key] = json!(v);
+    }
+}
+
 impl<T: Transport> HerdrClient<T> {
     pub async fn agent_list(&mut self) -> Result<Value> {
         self.request("agent.list", Some(json!({}))).await
@@ -100,6 +152,24 @@ impl<T: Transport> HerdrClient<T> {
         self.request("worktree.list", Some(params)).await
     }
 
+    pub async fn worktree_create(&mut self, req: WorktreeCreateRequest<'_>) -> Result<Value> {
+        self.request("worktree.create", Some(worktree_create_params(req)))
+            .await
+    }
+
+    pub async fn worktree_open(&mut self, req: WorktreeOpenRequest<'_>) -> Result<Value> {
+        self.request("worktree.open", Some(worktree_open_params(req)))
+            .await
+    }
+
+    pub async fn worktree_remove(&mut self, workspace_id: &str, force: bool) -> Result<Value> {
+        self.request(
+            "worktree.remove",
+            Some(worktree_remove_params(workspace_id, force)),
+        )
+        .await
+    }
+
     pub async fn notification_show(&mut self, title: &str, body: Option<&str>) -> Result<Value> {
         let mut params = json!({ "title": title });
         if let Some(b) = body {
@@ -130,4 +200,32 @@ pub fn extract_agent_rows(result: &Value) -> Vec<Value> {
         return arr.clone();
     }
     Vec::new()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn worktree_create_params_include_only_explicit_fields() {
+        let params = worktree_create_params(WorktreeCreateRequest {
+            branch: Some("feature"),
+            path: Some("../feature"),
+            base: Some("main"),
+            focus: true,
+            ..Default::default()
+        });
+
+        assert_eq!(params["branch"], "feature");
+        assert_eq!(params["path"], "../feature");
+        assert_eq!(params["base"], "main");
+        assert_eq!(params["focus"], true);
+        assert!(params.get("label").is_none());
+    }
+
+    #[test]
+    fn worktree_remove_params_preserve_force_choice() {
+        assert_eq!(worktree_remove_params("ws-1", false)["force"], false);
+        assert_eq!(worktree_remove_params("ws-1", true)["force"], true);
+    }
 }

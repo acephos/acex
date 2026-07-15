@@ -19,6 +19,33 @@ pub enum AttachTarget {
     Session,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorktreeCreateSpec {
+    pub branch: Option<String>,
+    pub path: Option<String>,
+    pub base: Option<String>,
+    pub label: Option<String>,
+    pub cwd: Option<String>,
+    pub workspace_id: Option<String>,
+    pub focus: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorktreeOpenSpec {
+    pub branch: Option<String>,
+    pub path: Option<String>,
+    pub label: Option<String>,
+    pub cwd: Option<String>,
+    pub workspace_id: Option<String>,
+    pub focus: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorktreeRemoveSpec {
+    pub workspace_id: String,
+    pub force: bool,
+}
+
 /// Commands raised by the UI; executed on the async Herdr worker.
 #[derive(Debug, Clone)]
 pub enum Intent {
@@ -49,6 +76,9 @@ pub enum Intent {
         target: AttachTarget,
     },
     WorktreeList,
+    WorktreeCreate(WorktreeCreateSpec),
+    WorktreeOpen(WorktreeOpenSpec),
+    WorktreeRemove(WorktreeRemoveSpec),
     Resnapshot,
     Notify {
         title: String,
