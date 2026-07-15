@@ -3,9 +3,9 @@
 mod palette;
 
 use acex_model::{
-    AgentState, AttachTarget, ConnState, Intent, LayoutPreset, PathTarget, StartPreset, Store,
-    WaitBadge, WorkspaceFocusSpec, WorkspaceTarget, WorktreeCreateSpec, WorktreeOpenSpec,
-    WorktreeRemoveSpec,
+    AgentActivityAge, AgentState, AttachTarget, ConnState, Intent, LayoutPreset, PathTarget,
+    StartPreset, Store, WaitBadge, WorkspaceFocusSpec, WorkspaceTarget, WorktreeCreateSpec,
+    WorktreeOpenSpec, WorktreeRemoveSpec, AGENT_ACTIVITY_DISPLAY_CAP_EVENTS,
 };
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
@@ -739,8 +739,9 @@ fn draw_board(f: &mut ratatui::Frame, area: Rect, store: &Store) {
                 .find(|w| w.target == target)
                 .map(wait_indicator)
                 .unwrap_or_default();
+            let activity = activity_indicator(store.agent_activity_age(a));
             let line = format!(
-                "{mark} [{:>8}] {} ({}){wait}",
+                "{mark} [{:>8}] {} ({}){wait}{activity}",
                 a.state.as_str(),
                 name,
                 target
@@ -771,6 +772,10 @@ fn draw_detail(f: &mut ratatui::Frame, area: Rect, store: &Store) {
             a.pane_id.as_deref().unwrap_or(&a.id),
             a.state.as_str()
         )));
+        let activity = activity_indicator(store.agent_activity_age(a));
+        if !activity.is_empty() {
+            lines.push(Line::from(format!("activity{activity}")));
+        }
         if let Some(cwd) = &a.cwd {
             lines.push(Line::from(format!("cwd {cwd}")));
         }
@@ -875,6 +880,28 @@ fn wait_indicator(w: &WaitBadge) -> String {
         format!(" ⚠{} expired", w.want.as_str())
     } else {
         String::new()
+    }
+}
+
+fn activity_indicator(activity: Option<AgentActivityAge<'_>>) -> String {
+    let Some(activity) = activity else {
+        return String::new();
+    };
+    let capped = activity.events_since.min(AGENT_ACTIVITY_DISPLAY_CAP_EVENTS);
+    let suffix = if activity.events_since > AGENT_ACTIVITY_DISPLAY_CAP_EVENTS {
+        "+"
+    } else {
+        ""
+    };
+    let age = if activity.events_since == 0 {
+        "now".to_string()
+    } else {
+        format!("+{capped}{suffix}ev")
+    };
+    if activity.stale {
+        format!(" · stale:{} {age}", activity.signal)
+    } else {
+        format!(" · last:{} {age}", activity.signal)
     }
 }
 
@@ -1271,6 +1298,26 @@ mod tests {
             } => assert!(title.contains("no live PTY preserve")),
             other => panic!("expected layout input mode, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn activity_indicator_shows_recent_and_stale_signals() {
+        let recent = AgentActivityAge {
+            events_since: 2,
+            stale: false,
+            signal: "pane_agent_status_changed",
+        };
+        assert_eq!(
+            activity_indicator(Some(recent)),
+            " · last:pane_agent_status_changed +2ev"
+        );
+
+        let stale = AgentActivityAge {
+            events_since: AGENT_ACTIVITY_DISPLAY_CAP_EVENTS + 7,
+            stale: true,
+            signal: "snapshot",
+        };
+        assert_eq!(activity_indicator(Some(stale)), " · stale:snapshot +99+ev");
     }
 
     #[test]
