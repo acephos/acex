@@ -8,7 +8,7 @@
 |--|--|
 | **Purpose** | Name crate boundaries, data flow, and extension seams so agents change the right layer. |
 | **Origin** | Scaffolded with Phase 0 cargo workspace; refined through F01–F14 control-plane work and the `acex-discover` package/skill discovery pass. |
-| **Status** | G0/G1 done and usable: board, palette, focus, peek, send, start, wait, Zed, attach, worktrees; active phase is recommended G1.5. |
+| **Status** | G0/G1 and recommended G1.5 are done and usable; active G2 work is tracker-selected polish slices, with F35 ANSI cached peek polish shipped. |
 | **Change** | Edit this file when ownership or data-flow changes; note decision in `docs/tracker.html`. |
 
 ---

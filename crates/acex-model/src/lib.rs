@@ -1183,6 +1183,15 @@ mod tests {
     }
 
     #[test]
+    fn set_peek_preserves_ansi_escape_sequences() {
+        let mut s = Store::default();
+        s.set_peek("w1:p1", "\u{1b}[31mred\u{1b}[0m\nplain");
+
+        assert_eq!(s.peek_lines[0], "\u{1b}[31mred\u{1b}[0m");
+        assert_eq!(s.peek_lines[1], "plain");
+    }
+
+    #[test]
     fn dotted_event_kind_normalizes() {
         let mut s = Store::default();
         s.apply_event(&Event {

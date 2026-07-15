@@ -94,15 +94,16 @@ Make **parallel agent development** feel like flying a well-instrumented cockpit
 
 ## Near-term objective (active)
 
-**Phase 2 first implementation slice is scoped:**
+**Phase 2 first implementation slice is shipped; choose the next G2 slice before coding:**
 
 1. ~~Phase 0 / G0~~ · ~~Phase 1 / G1 usable core~~ (board, filters, palette, focus/peek/send/start/wait/zed/attach/worktrees)
 2. ~~G1 polish blockers~~ · start presets, wait timeout UX, and attach target variants are tightened
 3. ~~Recommended G1.5~~ · worktree CRUD, pane run, layouts, diff, notify polish, paths chrome, and workspace focus are shipped/cut in the tracker
 4. ~~F34 Phase 2 scope checkpoint~~ · user selected one concrete G2 slice before implementation
-5. **Current / next-ready:** F35 Richer ANSI peek polish from the tracker checkpoint capsule
+5. ~~F35 Richer ANSI peek polish~~ · cached peek reads request ANSI payloads, preserve raw cache text, and render bounded SGR styling without live frame streaming or terminal emulation
+6. **Current / next-ready:** none selected in the tracker checkpoint capsule; the next continuation should record exactly one concrete G2 slice before implementation.
 
-Phase 1 is usable today; the active work is bounded F35 cached-peek ANSI polish, not live frame streaming, terminal emulation, or multi-session chrome.
+Phase 1 is usable today; G2 work remains bounded tracker-first polish, not live frame streaming, terminal emulation, or multi-session chrome.
 
 ---
 
