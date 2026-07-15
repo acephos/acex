@@ -80,11 +80,11 @@ async fn handle_intent(
                 s.peek_busy = true;
             }
             let mut client = connect_with_optional_spawn(target, spawn).await?;
-            let result = match client.agent_read(&t, "recent", peek_lines, true).await {
+            let result = match client.agent_read(&t, "recent", peek_lines, false).await {
                 Ok(v) => v,
                 Err(e) => {
                     warn!(error = %e, "agent.read failed; trying pane.read");
-                    client.pane_read(&t, "recent", peek_lines, true).await?
+                    client.pane_read(&t, "recent", peek_lines, false).await?
                 }
             };
             let text = extract_read_text(&result);
@@ -99,7 +99,7 @@ async fn handle_intent(
             run_herdr_command(&plan).await?;
             let mut client = connect_with_optional_spawn(target, spawn).await?;
             let result = client
-                .pane_read(&pane_id, "recent", peek_lines, true)
+                .pane_read(&pane_id, "recent", peek_lines, false)
                 .await?;
             let text = extract_read_text(&result);
             let mut s = lock_store(store.as_ref());
@@ -112,7 +112,7 @@ async fn handle_intent(
             let mut client = connect_with_optional_spawn(target, spawn).await?;
             let r = client.agent_send(&t, &text).await?;
             info!(%t, ?r, "agent.send");
-            if let Ok(v) = client.agent_read(&t, "recent", peek_lines, true).await {
+            if let Ok(v) = client.agent_read(&t, "recent", peek_lines, false).await {
                 let mut s = lock_store(store.as_ref());
                 s.set_peek(&t, &extract_read_text(&v));
             }

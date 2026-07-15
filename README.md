@@ -35,7 +35,7 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
 
 ## Status
 
-Gates **G0** and **G1** are complete/usable: board, filters, palette, focus, peek, send, start, wait, Zed open, attach, worktree list, reconnect/resnapshot. Current active phase is **G1.5 recommended**; next-ready work comes from the checkpoint capsule in `docs/tracker.html` and is machine-readable via `cargo run -p acex -- --checkpoint-status`.
+Gates **G0**, **G1**, and recommended **G1.5** are complete/usable: board, filters, palette, focus, peek, send, start, wait, Zed open/diff, attach, worktree/workspace actions, paths chrome, reconnect/resnapshot, and cached ANSI peek polish. Current active phase is **G2 tracker-selected polish**; next-ready work comes from the checkpoint capsule in `docs/tracker.html` and is machine-readable via `cargo run -p acex -- --checkpoint-status`.
 
 ```bash
 start docs/tracker.html   # Windows

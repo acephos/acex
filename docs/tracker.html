@@ -220,17 +220,17 @@
   "schema_version": 1,
   "last_updated": "2026-07-15",
   "active_gate": "G2",
-  "active_phase": "Phase 2 scope selection",
+  "active_phase": "G2 polish",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f34-selects-f35",
+  "latest_comment_id": "2026-07-15-f35-ansi-peek",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "3efd371e778322d6dcf37c7d56530b323e05af27e301b48a02a3de9aa61c9264",
-    "entry_count": 19
+    "latest_hash": "32f30dcd007a231f4020f2a1c2ecbb4b9c1eeb1bd877dcbcca1cd469a439bc24",
+    "entry_count": 20
   },
-  "next_ready": [{"id":"F35"}],
+  "next_ready": [],
   "blocked": []
 }
     </script>
@@ -239,9 +239,9 @@
     <section id="now" class="box">
       <div class="box-title"><span class="dot live"></span> Now · board status</div>
       <div class="kpi">
-        <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
-        <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">76</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">G2</div><div class="l">Phase</div></div>
+        <div class="cell"><div class="n">polish</div><div class="l">Track</div></div>
+        <div class="cell"><div class="n">83</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -249,13 +249,13 @@
       <div class="say" style="margin-top:16px">
         <span class="soul">♥</span>
         <p style="margin:0">
-          <strong>Active work:</strong> G1 usable core, G1 polish blockers, and recommended G1.5 are shipped — board, filters, palette,
-          focus/peek/send/start/wait/zed/attach/worktrees/workspaces via intent worker. Current work is F35 richer ANSI peek polish: improve cached read rendering without live frame streaming.
+          <strong>Active work:</strong> G1 usable core, G1 polish blockers, recommended G1.5, and F35 richer ANSI peek polish are shipped.
+          The next continuation should choose and record one concrete G2 slice in the tracker checkpoint capsule before implementation.
         </p>
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F35</strong> — Richer ANSI peek polish: preserve useful ANSI styles in cached peek/detail output without terminal emulation or treating peek as authority.</li>
+        <li><strong>None selected</strong> — choose and record the next concrete G2 slice before coding; do not infer a feature from prose.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -572,11 +572,11 @@
               <td>done 2026-07-15; user chose bounded richer ANSI peek polish as the first G2 slice; preserve SOUL refusals around live frames and terminal emulation.</td>
             </tr>
             <tr>
-              <td>F35</td><td><span class="st st-todo">todo</span></td>
+              <td>F35</td><td><span class="st st-done">done</span></td>
               <td>Richer ANSI peek polish</td><td class="pri-p1">P1</td><td>2</td>
               <td>agent.read / pane.read</td><td>Cached peek/detail output preserves useful ANSI styles with plain fallback; no live frame streaming</td>
               <td><span class="badge m">M</span></td><td>F08,F30</td>
-              <td>Bounded G2 polish: keep peek a cache, avoid terminal emulation, and prefer model/UI tests around shipped rendering helpers before any live Herdr proof.</td>
+              <td>done 2026-07-15; read RPCs request <code>format=ansi</code> with <code>strip_ansi=false</code> for cached peeks, the model preserves raw ANSI text, and the UI renders bounded SGR colors/modifiers while dropping unsupported controls; proof=83 workspace tests plus targeted ANSI/model/client tests.</td>
             </tr>
 
 
@@ -590,6 +590,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f35-ansi-peek">
+        <div class="meta"><span class="tag">2026-07-15</span> · F35 Richer ANSI peek polish · agent</div>
+        <p style="margin:0">
+          Shipped F35 cached ANSI peek polish without changing ownership boundaries: <code>agent.read</code>/<code>pane.read</code> cached reads now request ANSI payloads, <code>Store::set_peek</code> keeps escape sequences verbatim, and the detail pane converts useful SGR colors/modifiers into ratatui spans while swallowing unsupported OSC/control sequences. Peek remains a cache, not authority; live frame streaming and terminal emulation stay out of scope.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f34-selects-f35">
         <div class="meta"><span class="tag">2026-07-15</span> · F34 selects F35 · agent</div>
@@ -1068,6 +1075,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F35 shipped cached ANSI peek polish: read RPCs request ANSI payloads, the model preserves raw cached text, and the UI renders bounded SGR styles with plain/control-safe fallback.</li>
         <li><strong>2026-07-15</strong> — F34 recorded the user-selected F35 richer ANSI peek polish as the first concrete G2 slice, with live-frame streaming and terminal emulation kept out of scope.</li>
         <li><strong>2026-07-15</strong> — Added F34 as the Phase 2 scope checkpoint and made it the sole checkpoint <code>next_ready</code> item so continuation does not infer a G2 feature from prose.</li>
         <li><strong>2026-07-15</strong> — F26 shipped workspace list/focus wrappers, palette/input flows, <code>Ctrl+W</code> board scoping, and source-truth workspace rows that separate Herdr focus from local board scope.</li>
@@ -1148,8 +1156,8 @@
       <div class="fight-bar" aria-label="Ship status">
         <span>PHASE 0 ✓</span>
         <span>SHIP · G1 ✓</span>
-        <span class="active">* SHIP+ · G1.5</span>
-        <span>POST · G2</span>
+        <span>SHIP+ · G1.5 ✓</span>
+        <span class="active">* POST · G2</span>
       </div>
       <p class="foot-note">
         acex · self-aware control plane · keep the board honest

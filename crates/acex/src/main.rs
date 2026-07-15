@@ -349,11 +349,11 @@ async fn smoke_phase1(target: &SocketTarget, spawn: bool, store: &mut Store) -> 
     };
     let lines = store.peek_line_limit.max(40);
     let mut client = connect_with_optional_spawn(target, spawn).await?;
-    let text = match client.agent_read(&t, "recent", lines, true).await {
+    let text = match client.agent_read(&t, "recent", lines, false).await {
         Ok(v) => herdr_client::extract_read_text(&v),
         Err(e) => {
             warn!(error = %e, "smoke agent.read; trying pane.read");
-            match client.pane_read(&t, "recent", lines, true).await {
+            match client.pane_read(&t, "recent", lines, false).await {
                 Ok(v) => herdr_client::extract_read_text(&v),
                 Err(e2) => {
                     warn!(error = %e2, "smoke pane.read failed");

@@ -33,6 +33,14 @@ pub struct LayoutApplyRequest<'a> {
     pub focus: bool,
 }
 
+fn read_format(strip_ansi: bool) -> &'static str {
+    if strip_ansi {
+        "text"
+    } else {
+        "ansi"
+    }
+}
+
 pub fn worktree_create_params(req: WorktreeCreateRequest<'_>) -> Value {
     let mut params = json!({ "focus": req.focus });
     insert_optional_str(&mut params, "branch", req.branch);
@@ -126,7 +134,7 @@ impl<T: Transport> HerdrClient<T> {
                 "source": source,
                 "lines": lines,
                 "strip_ansi": strip_ansi,
-                "format": "text",
+                "format": read_format(strip_ansi),
             })),
         )
         .await
@@ -146,7 +154,7 @@ impl<T: Transport> HerdrClient<T> {
                 "source": source,
                 "lines": lines,
                 "strip_ansi": strip_ansi,
-                "format": "text",
+                "format": read_format(strip_ansi),
             })),
         )
         .await
@@ -243,6 +251,19 @@ pub fn extract_agent_rows(result: &Value) -> Vec<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn read_format_requests_ansi_when_not_stripping() {
+        assert_eq!(read_format(true), "text");
+        assert_eq!(read_format(false), "ansi");
+    }
+
+    #[test]
+    fn extract_read_text_preserves_ansi_payload() {
+        let value = json!({"read": {"text": "\u{1b}[31mred\u{1b}[0m"}});
+
+        assert_eq!(extract_read_text(&value), "\u{1b}[31mred\u{1b}[0m");
+    }
 
     #[test]
     fn worktree_create_params_include_only_explicit_fields() {

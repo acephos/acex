@@ -15,7 +15,7 @@ use crossterm::ExecutableCommand;
 use palette::{Palette, PaletteAction};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap};
 use ratatui::Terminal;
@@ -814,9 +814,9 @@ fn draw_detail(f: &mut ratatui::Frame, area: Rect, store: &Store) {
     if store.peek_lines.is_empty() {
         lines.push(Line::from("  (r refresh peek)"));
     } else {
-        let take = store.peek_lines.len().saturating_sub(40);
-        for l in store.peek_lines.iter().skip(take) {
-            lines.push(Line::from(format!("  {l}")));
+        let skip = store.peek_lines.len().saturating_sub(40);
+        for l in store.peek_lines.iter().skip(skip) {
+            lines.push(styled_peek_line(l));
         }
     }
 
@@ -897,6 +897,169 @@ fn workspace_target_line(target: &WorkspaceTarget<'_>) -> String {
         _ => target.id.to_string(),
     };
     format!("  {scope}{focused} workspace {name}")
+}
+
+fn styled_peek_line(raw: &str) -> Line<'static> {
+    let mut spans = vec![Span::raw("  ")];
+    spans.extend(ansi_spans(raw));
+    Line::from(spans)
+}
+
+fn ansi_spans(raw: &str) -> Vec<Span<'static>> {
+    let mut spans = Vec::new();
+    let mut buf = String::new();
+    let mut style = Style::default();
+    let mut chars = raw.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\u{1b}' {
+            match chars.peek().copied() {
+                Some('[') => {
+                    chars.next();
+                    let mut seq = String::new();
+                    let mut final_byte = None;
+                    for c in chars.by_ref() {
+                        if ('@'..='~').contains(&c) {
+                            final_byte = Some(c);
+                            break;
+                        }
+                        seq.push(c);
+                    }
+                    if final_byte == Some('m') {
+                        push_styled_span(&mut spans, &mut buf, style);
+                        apply_sgr(&mut style, &seq);
+                    }
+                }
+                Some(']') => {
+                    chars.next();
+                    let mut prev_escape = false;
+                    for c in chars.by_ref() {
+                        if c == '\u{7}' || (prev_escape && c == '\\') {
+                            break;
+                        }
+                        prev_escape = c == '\u{1b}';
+                    }
+                }
+                Some(_) => {
+                    chars.next();
+                }
+                None => {}
+            }
+        } else if ch.is_control() && ch != '\t' {
+            // Fall back to visible text for unknown control bytes instead of leaking escapes.
+        } else {
+            buf.push(ch);
+        }
+    }
+    push_styled_span(&mut spans, &mut buf, style);
+    if spans.is_empty() {
+        vec![Span::raw(String::new())]
+    } else {
+        spans
+    }
+}
+
+fn push_styled_span(spans: &mut Vec<Span<'static>>, buf: &mut String, style: Style) {
+    if !buf.is_empty() {
+        spans.push(Span::styled(std::mem::take(buf), style));
+    }
+}
+
+fn apply_sgr(style: &mut Style, seq: &str) {
+    let params: Vec<u16> = if seq.trim().is_empty() {
+        vec![0]
+    } else {
+        seq.split(';')
+            .map(|part| part.parse::<u16>().unwrap_or(0))
+            .collect()
+    };
+    let mut i = 0;
+    while i < params.len() {
+        match params[i] {
+            0 => *style = Style::default(),
+            1 => style.add_modifier |= Modifier::BOLD,
+            2 => style.add_modifier |= Modifier::DIM,
+            3 => style.add_modifier |= Modifier::ITALIC,
+            4 => style.add_modifier |= Modifier::UNDERLINED,
+            7 => style.add_modifier |= Modifier::REVERSED,
+            9 => style.add_modifier |= Modifier::CROSSED_OUT,
+            22 => {
+                style.add_modifier.remove(Modifier::BOLD | Modifier::DIM);
+                style.sub_modifier |= Modifier::BOLD | Modifier::DIM;
+            }
+            23 => {
+                style.add_modifier.remove(Modifier::ITALIC);
+                style.sub_modifier |= Modifier::ITALIC;
+            }
+            24 => {
+                style.add_modifier.remove(Modifier::UNDERLINED);
+                style.sub_modifier |= Modifier::UNDERLINED;
+            }
+            27 => {
+                style.add_modifier.remove(Modifier::REVERSED);
+                style.sub_modifier |= Modifier::REVERSED;
+            }
+            29 => {
+                style.add_modifier.remove(Modifier::CROSSED_OUT);
+                style.sub_modifier |= Modifier::CROSSED_OUT;
+            }
+            30..=37 | 90..=97 => style.fg = ansi_color(params[i], false),
+            39 => style.fg = None,
+            40..=47 | 100..=107 => style.bg = ansi_color(params[i], true),
+            49 => style.bg = None,
+            38 | 48 => {
+                if let Some((color, consumed)) = extended_ansi_color(&params[i + 1..]) {
+                    if params[i] == 38 {
+                        style.fg = Some(color);
+                    } else {
+                        style.bg = Some(color);
+                    }
+                    i += consumed;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+}
+
+fn ansi_color(code: u16, background: bool) -> Option<Color> {
+    let base = if background {
+        code.saturating_sub(10)
+    } else {
+        code
+    };
+    Some(match base {
+        30 => Color::Black,
+        31 => Color::Red,
+        32 => Color::Green,
+        33 => Color::Yellow,
+        34 => Color::Blue,
+        35 => Color::Magenta,
+        36 => Color::Cyan,
+        37 => Color::Gray,
+        90 => Color::DarkGray,
+        91 => Color::LightRed,
+        92 => Color::LightGreen,
+        93 => Color::LightYellow,
+        94 => Color::LightBlue,
+        95 => Color::LightMagenta,
+        96 => Color::LightCyan,
+        97 => Color::White,
+        _ => return None,
+    })
+}
+
+fn extended_ansi_color(params: &[u16]) -> Option<(Color, usize)> {
+    match params {
+        [5, idx, ..] if *idx <= u8::MAX as u16 => Some((Color::Indexed(*idx as u8), 2)),
+        [2, r, g, b, ..]
+            if *r <= u8::MAX as u16 && *g <= u8::MAX as u16 && *b <= u8::MAX as u16 =>
+        {
+            Some((Color::Rgb(*r as u8, *g as u8, *b as u8), 4))
+        }
+        _ => None,
+    }
 }
 
 fn now_ms() -> u64 {
@@ -1123,6 +1286,45 @@ mod tests {
         };
 
         assert_eq!(wait_indicator(&wait), " ⚠done expired");
+    }
+
+    #[test]
+    fn ansi_spans_apply_basic_sgr_and_reset() {
+        let spans = ansi_spans("plain \u{1b}[31;1mred\u{1b}[0m tail");
+
+        assert_eq!(span_text(&spans), "plain red tail");
+        let red = spans.iter().find(|span| span.content == "red").unwrap();
+        assert_eq!(red.style.fg, Some(Color::Red));
+        assert!(red.style.add_modifier.contains(Modifier::BOLD));
+        let tail = spans.iter().find(|span| span.content == " tail").unwrap();
+        assert_eq!(tail.style, Style::default());
+    }
+
+    #[test]
+    fn ansi_spans_apply_extended_indexed_and_rgb_color() {
+        let indexed = ansi_spans("\u{1b}[38;5;208midx");
+        assert_eq!(indexed[0].style.fg, Some(Color::Indexed(208)));
+
+        let rgb = ansi_spans("\u{1b}[38;2;1;2;3mrgb");
+        assert_eq!(rgb[0].style.fg, Some(Color::Rgb(1, 2, 3)));
+    }
+
+    #[test]
+    fn ansi_spans_swallow_osc_metadata() {
+        let spans = ansi_spans("a\u{1b}]0;window title\u{7}b");
+
+        assert_eq!(span_text(&spans), "ab");
+    }
+
+    #[test]
+    fn ansi_spans_drop_unknown_controls_and_csi() {
+        let spans = ansi_spans("a\u{8}b\u{1b}[?25hc");
+
+        assert_eq!(span_text(&spans), "abc");
+    }
+
+    fn span_text(spans: &[Span<'_>]) -> String {
+        spans.iter().map(|span| span.content.as_ref()).collect()
     }
 
     #[test]
