@@ -898,10 +898,21 @@ fn activity_indicator(activity: Option<AgentActivityAge<'_>>) -> String {
     } else {
         format!("+{capped}{suffix}ev")
     };
+    let signal = activity_signal_label(activity.signal);
     if activity.stale {
-        format!(" · stale:{} {age}", activity.signal)
+        format!(" · stale:{signal} {age}")
     } else {
-        format!(" · last:{} {age}", activity.signal)
+        format!(" · last:{signal} {age}")
+    }
+}
+
+fn activity_signal_label(signal: &str) -> &str {
+    match signal {
+        "pane_agent_status_changed" => "status",
+        "pane_created" => "pane",
+        "pane_agent_detected" => "agent",
+        "agent.list" => "list",
+        other => other,
     }
 }
 
@@ -1307,10 +1318,7 @@ mod tests {
             stale: false,
             signal: "pane_agent_status_changed",
         };
-        assert_eq!(
-            activity_indicator(Some(recent)),
-            " · last:pane_agent_status_changed +2ev"
-        );
+        assert_eq!(activity_indicator(Some(recent)), " · last:status +2ev");
 
         let stale = AgentActivityAge {
             events_since: AGENT_ACTIVITY_DISPLAY_CAP_EVENTS + 7,
@@ -1318,6 +1326,63 @@ mod tests {
             signal: "snapshot",
         };
         assert_eq!(activity_indicator(Some(stale)), " · stale:snapshot +99+ev");
+    }
+
+    #[test]
+    fn board_detail_render_three_panes_without_ghost_rows_or_raw_logs() {
+        let mut store = Store::default();
+        store.apply_resnapshot(herdr_types::SessionSnapshot {
+            agents: vec![herdr_types::AgentSummary {
+                id: "ghost".into(),
+                pane_id: Some("stale:pane".into()),
+                state: AgentState::Working,
+                ..Default::default()
+            }],
+            panes: vec![
+                serde_json::json!({"pane_id":"w1:p1","agent_status":"idle","cwd":"C:\\Users\\Administrator"}),
+                serde_json::json!({"pane_id":"w2:p1","agent_status":"working"}),
+                serde_json::json!({"pane_id":"w3:p1","agent_status":"blocked"}),
+            ],
+            workspaces: vec![
+                serde_json::json!({"workspace_id":"w1","label":"acex-probe"}),
+                serde_json::json!({"workspace_id":"w2","label":"acex-evt"}),
+                serde_json::json!({"workspace_id":"w3","label":"acex-e2e-sub","focused":true}),
+            ],
+            ..Default::default()
+        });
+        store.conn = ConnState::Live;
+        store.subscribed = false;
+        store.status_note = Some(
+            "snapshot live · subscribe failed: io: The pipe is being closed. (os error 232) · retrying"
+                .into(),
+        );
+        store.ensure_selection();
+
+        let (tx, _rx) = std::sync::mpsc::channel();
+        let app = App::with_shared(Arc::new(Mutex::new(Store::default())), tx);
+        let backend = ratatui::backend::TestBackend::new(156, 48);
+        let mut terminal = Terminal::new(backend).expect("test terminal");
+        terminal
+            .draw(|frame| draw(frame, &store, &app))
+            .expect("draw frame");
+        let text = terminal_buffer_text(terminal.backend().buffer());
+
+        assert_eq!(store.agents.len(), 3);
+        assert!(text.contains("snapshot live · subscribe failed"));
+        assert!(text.contains("last:resync now"));
+        assert!(!text.contains("stale:pane"));
+        assert!(!text.contains("pane_agent_status_changed"));
+    }
+
+    fn terminal_buffer_text(buffer: &ratatui::buffer::Buffer) -> String {
+        let mut text = String::new();
+        for y in 0..buffer.area.height {
+            for x in 0..buffer.area.width {
+                text.push_str(buffer[(x, y)].symbol());
+            }
+            text.push('\n');
+        }
+        text
     }
 
     #[test]

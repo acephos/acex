@@ -71,6 +71,7 @@ dependencies = [
  "crossterm",
  "herdr-types",
  "ratatui",
+ "serde_json",
 ]
 
 [[package]]

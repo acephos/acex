@@ -9,6 +9,8 @@ mod worker;
 use checkpoint_status::{build_checkpoint_status, collect_git_info};
 use sync_util::lock_store;
 
+use std::fs::{File, OpenOptions};
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -26,6 +28,70 @@ use herdr_client::{
 use herdr_types::Event;
 use tracing::{error, info, warn};
 
+#[derive(Clone)]
+struct SharedLogWriter {
+    file: Arc<Mutex<File>>,
+}
+
+impl SharedLogWriter {
+    fn new(file: File) -> Self {
+        Self {
+            file: Arc::new(Mutex::new(file)),
+        }
+    }
+}
+
+struct SharedLogGuard {
+    file: Arc<Mutex<File>>,
+}
+
+impl Write for SharedLogGuard {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let mut file = self.file.lock().unwrap_or_else(|e| e.into_inner());
+        file.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let mut file = self.file.lock().unwrap_or_else(|e| e.into_inner());
+        file.flush()
+    }
+}
+
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for SharedLogWriter {
+    type Writer = SharedLogGuard;
+
+    fn make_writer(&'a self) -> Self::Writer {
+        SharedLogGuard {
+            file: Arc::clone(&self.file),
+        }
+    }
+}
+
+fn init_tracing(log_to_file: bool) -> anyhow::Result<()> {
+    let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
+    if log_to_file {
+        let log_path = PathBuf::from("target").join("acex.log");
+        if let Some(parent) = log_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)?;
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_writer(SharedLogWriter::new(file))
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_writer(std::io::stderr)
+            .init();
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -37,13 +103,8 @@ async fn main() -> anyhow::Result<()> {
     let checkpoint_status = args.iter().any(|a| a == "--checkpoint-status");
 
     if !checkpoint_status {
-        tracing_subscriber::fmt()
-            .with_env_filter(
-                tracing_subscriber::EnvFilter::try_from_default_env()
-                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-            )
-            .with_writer(std::io::stderr)
-            .init();
+        let interactive_tui = !status && !smoke && !smoke_reconnect;
+        init_tracing(interactive_tui)?;
     }
 
     let cfg = Config::load();
@@ -451,7 +512,6 @@ async fn run_live_loop(
                         gen = s.snapshot_gen,
                         "F04 resnapshot applied"
                     );
-                    backoff_ms = 200;
                 }
                 Err(e) => {
                     warn!(error = %e, "F04 resnapshot failed");
@@ -491,7 +551,6 @@ async fn run_live_loop(
                     }
                 }
                 need_resnapshot = true;
-                backoff_ms = 200;
                 info!("subscribe loop connected");
 
                 loop {
@@ -507,6 +566,7 @@ async fn run_live_loop(
                                 data: push.data,
                                 extra: Default::default(),
                             });
+                            backoff_ms = 200;
                         }
                         Ok(Err(e)) => {
                             warn!(error = %e, "subscribe stream ended");
@@ -522,9 +582,17 @@ async fn run_live_loop(
                 warn!(error = %e, "subscribe start failed");
                 {
                     let mut s = lock_store(&store);
-                    s.mark_reconnecting(format!("subscribe failed: {e}"));
+                    s.subscribed = false;
+                    s.conn = ConnState::Live;
+                    s.live = true;
+                    let msg = format!("subscribe failed: {e}");
+                    s.status_note = Some(format!("snapshot live · {msg} · retrying"));
+                    s.set_error(msg);
                 }
-                need_resnapshot = true;
+                // Subscribe setup failed before a stream delivered events. Keep the
+                // last snapshot as board truth and retry with exponential backoff;
+                // do not churn resnapshot/reconnect counters for this path.
+                need_resnapshot = false;
             }
         }
 

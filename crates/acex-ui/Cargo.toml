@@ -10,3 +10,7 @@ acex-model = { workspace = true }
 herdr-types = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
+
+
+[dev-dependencies]
+serde_json = { workspace = true }

@@ -223,12 +223,12 @@
   "active_phase": "G2 polish",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f36-activity-age",
+  "latest_comment_id": "2026-07-15-demo-board-repair",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "6a7b1abf710f9e0d5e9834a6795a68f97d31b4a67f60a7c0b59345e5ca91cdff",
-    "entry_count": 21
+    "latest_hash": "acfd02cb575f7363b0b3a7ddc3cded0dd0aef381606a995b2fa874cf5b6d888f",
+    "entry_count": 22
   },
   "next_ready": [],
   "blocked": []
@@ -597,6 +597,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-demo-board-repair">
+        <div class="meta"><span class="tag">2026-07-15</span> · Demo board repair · agent</div>
+        <p style="margin:0">
+          Repaired the concrete demo blockers observed in the live screenshot: interactive TUI tracing now writes to <code>target/acex.log</code> instead of stderr over the alternate screen, resnapshots reconcile agents against fresh pane authority so stale/ghost rows are dropped, subscribe-start pipe-close failures keep the snapshot board live and retry with backoff instead of driving a resnapshot storm, and F36 activity labels are shortened for row/detail fit. Added a headless ratatui buffer regression covering the 3-pane board with subscribe-failure status.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f36-activity-age">
         <div class="meta"><span class="tag">2026-07-15</span> · F36 Board activity age polish · agent</div>
@@ -1089,6 +1096,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — Repaired demo board blockers: logs route to <code>target/acex.log</code> during the TUI, resnapshot drops ghost rows, subscribe-start pipe-close retries stop resnapshot storms, and headless render coverage guards the 3-pane board.</li>
         <li><strong>2026-07-15</strong> — F36 shipped board activity age polish: per-agent last-signal tracking from existing store inputs plus bounded board/detail stale cues, with no polling, live frame streaming, terminal emulation, or peek-as-truth.</li>
         <li><strong>2026-07-15</strong> — F35 shipped cached ANSI peek polish: read RPCs request ANSI payloads, the model preserves raw cached text, and the UI renders bounded SGR styles with plain/control-safe fallback.</li>
         <li><strong>2026-07-15</strong> — F34 recorded the user-selected F35 richer ANSI peek polish as the first concrete G2 slice, with live-frame streaming and terminal emulation kept out of scope.</li>
