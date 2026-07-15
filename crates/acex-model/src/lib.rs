@@ -141,11 +141,7 @@ impl Store {
         self.workspace_count = snap.workspaces.len();
         self.pane_count = snap.panes.len();
         self.tab_count = snap.tabs.len();
-        self.agents = snap.agents.clone();
-        // Derive agent rows from panes when agents[] is empty but panes carry status.
-        if self.agents.is_empty() {
-            self.agents = agents_from_panes(&snap.panes);
-        }
+        self.agents = agents_from_snapshot(&snap);
         self.reset_agent_activity(if from_reconnect { "resync" } else { "snapshot" });
         self.snapshot = snap;
         self.live = true;
@@ -854,6 +850,30 @@ fn upsert_agent(agents: &mut Vec<AgentSummary>, row: AgentSummary) {
     }
 }
 
+fn agents_from_snapshot(snap: &SessionSnapshot) -> Vec<AgentSummary> {
+    let pane_rows = agents_from_panes(&snap.panes);
+    let pane_ids = pane_rows
+        .iter()
+        .filter_map(|agent| agent.pane_id.clone())
+        .collect::<BTreeSet<_>>();
+    let mut agents = Vec::new();
+    for agent in &snap.agents {
+        if pane_ids.is_empty()
+            || agent
+                .pane_id
+                .as_deref()
+                .is_some_and(|pane_id| pane_ids.contains(pane_id))
+            || pane_ids.contains(agent.id.as_str())
+        {
+            upsert_agent(&mut agents, agent.clone());
+        }
+    }
+    for pane_row in pane_rows {
+        upsert_agent(&mut agents, pane_row);
+    }
+    agents
+}
+
 fn agents_from_panes(panes: &[Value]) -> Vec<AgentSummary> {
     panes.iter().filter_map(agent_from_pane).collect()
 }
@@ -1030,6 +1050,7 @@ mod tests {
             ..Default::default()
         };
         s.reset_agent_activity("seed");
+
         for n in 0..3 {
             s.apply_event(&Event {
                 event: "workspace_created".into(),
@@ -1049,6 +1070,42 @@ mod tests {
         assert_eq!(age.events_since, 0);
         assert_eq!(age.signal, "pane_agent_status_changed");
         assert!(!age.stale);
+    }
+
+    #[test]
+    fn resnapshot_reconciles_agents_against_fresh_panes() {
+        let mut s = Store {
+            agents: vec![AgentSummary {
+                id: "ghost".into(),
+                pane_id: Some("stale:pane".into()),
+                state: AgentState::Working,
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        s.apply_resnapshot(SessionSnapshot {
+            agents: vec![
+                AgentSummary {
+                    id: "w1:p1".into(),
+                    pane_id: Some("w1:p1".into()),
+                    state: AgentState::Unknown,
+                    ..Default::default()
+                },
+                AgentSummary {
+                    id: "old".into(),
+                    pane_id: Some("stale:pane".into()),
+                    state: AgentState::Blocked,
+                    ..Default::default()
+                },
+            ],
+            panes: vec![json!({"pane_id":"w1:p1","agent_status":"idle"})],
+            ..Default::default()
+        });
+
+        assert_eq!(s.agents.len(), 1);
+        assert_eq!(s.agents[0].pane_id.as_deref(), Some("w1:p1"));
+        assert_eq!(s.agents[0].state, AgentState::Idle);
     }
 
     #[test]
