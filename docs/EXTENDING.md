@@ -57,7 +57,7 @@ cargo run -p acex -- --status
 
 ## Recipe A — New operator action (most common)
 
-Current shipped references: palette actions cover focus, peek, send, start, wait done/blocked, Zed open/new/add-window, attach/session attach, worktrees, resnapshot, refresh agents, and notify. The `Intent` surface also has Zed diff support for worker/editor integration.
+Current shipped references: palette actions cover focus, peek, send, pane run, start, wait done/blocked, Zed open/new/add-window, attach/session attach, worktrees, resnapshot, refresh agents, and notify. The `Intent` surface also has Zed diff support for worker/editor integration.
 
 
 **Goal:** palette + key binding + Herdr (or side-effect) behavior.

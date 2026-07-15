@@ -93,6 +93,20 @@ async fn handle_intent(
             s.set_toast("peek updated");
             s.last_error = None;
         }
+        Intent::RunPaneSelected { command } => {
+            let pane_id = selected_target(store)?;
+            let plan = build_herdr_pane_run_plan(target, &pane_id, &command)?;
+            run_herdr_command(&plan).await?;
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let result = client
+                .pane_read(&pane_id, "recent", peek_lines, true)
+                .await?;
+            let text = extract_read_text(&result);
+            let mut s = lock_store(store.as_ref());
+            s.set_peek(pane_id.clone(), &text);
+            s.set_toast(format!("pane run {pane_id}"));
+            s.last_error = None;
+        }
         Intent::SendSelected { text } => {
             let t = selected_target(store)?;
             let mut client = connect_with_optional_spawn(target, spawn).await?;
@@ -313,7 +327,7 @@ fn worktree_open_request(spec: &WorktreeOpenSpec) -> WorktreeOpenRequest<'_> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct AttachCommandPlan {
+struct HerdrCommandPlan {
     program: &'static str,
     args: Vec<String>,
     env: Vec<(&'static str, OsString)>,
@@ -322,8 +336,8 @@ struct AttachCommandPlan {
 fn build_herdr_attach_plan(
     socket_target: &SocketTarget,
     attach_target: &AttachTarget,
-) -> anyhow::Result<AttachCommandPlan> {
-    let mut plan = AttachCommandPlan {
+) -> anyhow::Result<HerdrCommandPlan> {
+    let mut plan = HerdrCommandPlan {
         program: "herdr",
         args: Vec::new(),
         env: socket_env(socket_target)?,
@@ -385,7 +399,51 @@ fn attach_toast(target: &AttachTarget) -> String {
     }
 }
 
-fn spawn_herdr_attach(plan: &AttachCommandPlan) -> anyhow::Result<()> {
+fn build_herdr_pane_run_plan(
+    socket_target: &SocketTarget,
+    pane_id: &str,
+    command: &str,
+) -> anyhow::Result<HerdrCommandPlan> {
+    let pane_id = non_blank(pane_id, "pane run target")?;
+    let command = non_blank(command, "pane run command")?;
+    Ok(HerdrCommandPlan {
+        program: "herdr",
+        args: vec!["pane".into(), "run".into(), pane_id, command],
+        env: socket_env(socket_target)?,
+    })
+}
+
+async fn run_herdr_command(plan: &HerdrCommandPlan) -> anyhow::Result<()> {
+    let mut cmd = tokio::process::Command::new(plan.program);
+    cmd.args(&plan.args);
+    cmd.env_remove("HERDR_SOCKET_PATH");
+    cmd.env_remove("HERDR_SESSION");
+    for (key, value) in &plan.env {
+        cmd.env(key, value);
+    }
+
+    #[cfg(windows)]
+    {
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let output = cmd.output().await?;
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let detail = if stderr.trim().is_empty() {
+        stdout.trim()
+    } else {
+        stderr.trim()
+    };
+    anyhow::bail!("herdr {} failed: {detail}", plan.args.join(" "))
+}
+
+fn spawn_herdr_attach(plan: &HerdrCommandPlan) -> anyhow::Result<()> {
     let mut cmd = std::process::Command::new(plan.program);
     cmd.args(&plan.args);
     cmd.env_remove("HERDR_SOCKET_PATH");
@@ -446,7 +504,7 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    fn env_value<'a>(plan: &'a AttachCommandPlan, key: &str) -> Option<&'a OsString> {
+    fn env_value<'a>(plan: &'a HerdrCommandPlan, key: &str) -> Option<&'a OsString> {
         plan.env.iter().find_map(|(k, v)| (*k == key).then_some(v))
     }
 
@@ -513,6 +571,27 @@ mod tests {
             .expect_err("selected target should be resolved by the worker");
 
         assert!(err.to_string().contains("must be resolved"));
+    }
+
+    #[test]
+    fn pane_run_plan_uses_herdr_cli_and_socket_env() {
+        let socket = SocketTarget::Path(PathBuf::from("/tmp/herdr.sock"));
+        let plan = build_herdr_pane_run_plan(&socket, "w1:p1", "echo ok").expect("pane run plan");
+
+        assert_eq!(plan.program, "herdr");
+        assert_eq!(plan.args, ["pane", "run", "w1:p1", "echo ok"]);
+        assert_eq!(
+            env_value(&plan, "HERDR_SOCKET_PATH"),
+            Some(&OsString::from("/tmp/herdr.sock"))
+        );
+    }
+
+    #[test]
+    fn pane_run_plan_rejects_blank_command() {
+        let err = build_herdr_pane_run_plan(&SocketTarget::Default, "w1:p1", "  ")
+            .expect_err("blank command should fail");
+
+        assert!(err.to_string().contains("pane run command is blank"));
     }
 
     #[test]

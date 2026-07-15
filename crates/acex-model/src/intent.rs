@@ -56,6 +56,9 @@ pub enum Intent {
     SendSelected {
         text: String,
     },
+    RunPaneSelected {
+        command: String,
+    },
     StartAgent {
         name: String,
         argv: Vec<String>,
