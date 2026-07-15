@@ -7,7 +7,7 @@ mod intent;
 pub use herdr_types::{AgentState, AgentSummary, Event, SessionSnapshot};
 pub use intent::{
     AttachTarget, Intent, LayoutNode, LayoutPreset, SplitDirection, StartPreset,
-    WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec, ZedOpenMode,
+    WorkspaceFocusSpec, WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec, ZedOpenMode,
 };
 
 use serde_json::Value;
@@ -41,6 +41,14 @@ pub struct PathTarget<'a> {
     pub label: Option<&'a str>,
     pub path: &'a str,
     pub selected: bool,
+}
+/// Workspace focus/scoping target surfaced from Herdr snapshots.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WorkspaceTarget<'a> {
+    pub id: &'a str,
+    pub label: Option<&'a str>,
+    pub focused: bool,
+    pub scoped: bool,
 }
 
 /// Application store reduced from Herdr truth.
@@ -190,22 +198,28 @@ impl Store {
                         .workspaces
                         .retain(|w| w.get("workspace_id").and_then(|v| v.as_str()) != Some(id));
                     self.workspace_count = self.snapshot.workspaces.len();
-                    // Drop agents in that workspace if annotated.
-                    self.agents.retain(|a| {
-                        a.extra
-                            .get("workspace_id")
-                            .and_then(|v| v.as_str())
-                            .map(|w| w != id)
-                            .unwrap_or(true)
-                    });
+                    // Drop agents in that workspace if annotated, and clear stale board scope.
+                    self.agents.retain(|a| agent_workspace_id(a) != Some(id));
+                    if self.filter.workspace.as_deref() == Some(id) {
+                        self.filter.workspace = None;
+                    }
                 } else {
                     self.workspace_count = self.workspace_count.saturating_sub(1);
                 }
             }
-            "workspace_updated" | "workspace_renamed" | "workspace_focused" | "workspace_moved" => {
+            "workspace_updated" | "workspace_renamed" | "workspace_moved" => {
                 if let Some(ws) = event.data.get("workspace") {
                     upsert_by_id(&mut self.snapshot.workspaces, ws, "workspace_id");
                     self.workspace_count = self.snapshot.workspaces.len();
+                }
+            }
+            "workspace_focused" => {
+                if let Some(ws) = event.data.get("workspace") {
+                    upsert_by_id(&mut self.snapshot.workspaces, ws, "workspace_id");
+                    self.workspace_count = self.snapshot.workspaces.len();
+                }
+                if let Some(id) = event.data.get("workspace_id").and_then(|v| v.as_str()) {
+                    mark_workspace_focused(&mut self.snapshot.workspaces, id);
                 }
             }
             "tab_created" => {
@@ -347,6 +361,16 @@ impl Store {
         self.peek_lines = text.lines().map(|l| l.to_string()).collect();
         self.peek_busy = false;
     }
+    pub fn apply_workspace_values(&mut self, rows: Vec<Value>) {
+        self.snapshot.workspaces = rows;
+        self.workspace_count = self.snapshot.workspaces.len();
+        if let Some(current) = self.filter.workspace.as_deref() {
+            if !workspace_exists(&self.snapshot.workspaces, current) {
+                self.filter.workspace = None;
+            }
+        }
+        self.ensure_selection();
+    }
 
     pub fn path_targets(&self) -> Vec<PathTarget<'_>> {
         let mut rows = Vec::new();
@@ -386,6 +410,37 @@ impl Store {
 
         rows
     }
+    pub fn workspace_targets(&self) -> Vec<WorkspaceTarget<'_>> {
+        let scoped = self.filter.workspace.as_deref();
+        self.snapshot
+            .workspaces
+            .iter()
+            .filter_map(|workspace| {
+                let id = value_str(workspace, &["workspace_id", "id"])?;
+                Some(WorkspaceTarget {
+                    id,
+                    label: value_str(workspace, &["label", "name"]),
+                    focused: workspace
+                        .get("focused")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false),
+                    scoped: scoped == Some(id),
+                })
+            })
+            .collect()
+    }
+
+    pub fn workspace_scope_label(&self) -> String {
+        let Some(workspace_id) = self.filter.workspace.as_deref() else {
+            return "all".into();
+        };
+        self.workspace_targets()
+            .into_iter()
+            .find(|workspace| workspace.id == workspace_id)
+            .and_then(|workspace| workspace.label)
+            .unwrap_or(workspace_id)
+            .to_string()
+    }
 
     pub fn filtered_agents(&self) -> Vec<(usize, &AgentSummary)> {
         self.agents
@@ -394,6 +449,11 @@ impl Store {
             .filter(|(_, a)| {
                 if let Some(st) = self.filter.state {
                     if a.state != st {
+                        return false;
+                    }
+                }
+                if let Some(workspace) = self.filter.workspace.as_deref() {
+                    if agent_workspace_id(a) != Some(workspace) {
                         return false;
                     }
                 }
@@ -440,19 +500,47 @@ impl Store {
             self.selected = None;
             return;
         }
+        let rows = self.filtered_agents();
+        if rows.is_empty() {
+            self.selected = None;
+            return;
+        }
         if self
             .selected
-            .map(|i| i >= self.agents.len())
-            .unwrap_or(true)
+            .is_some_and(|selected| rows.iter().any(|(index, _)| *index == selected))
         {
-            // Prefer first filtered row.
-            let rows = self.filtered_agents();
-            self.selected = rows.first().map(|(i, _)| *i).or(Some(0));
+            return;
         }
+        self.selected = Some(rows[0].0);
     }
 
     pub fn set_filter_state(&mut self, state: Option<AgentState>) {
         self.filter.state = state;
+        self.ensure_selection();
+    }
+    pub fn set_workspace_filter(&mut self, workspace: Option<String>) {
+        self.filter.workspace = workspace.and_then(|value| {
+            let trimmed = value.trim();
+            (!trimmed.is_empty()).then(|| trimmed.to_string())
+        });
+        self.ensure_selection();
+    }
+
+    pub fn cycle_workspace_filter(&mut self) {
+        let ids = self
+            .snapshot
+            .workspaces
+            .iter()
+            .filter_map(|workspace| value_str(workspace, &["workspace_id", "id"]))
+            .collect::<Vec<_>>();
+        self.filter.workspace = match self.filter.workspace.as_deref() {
+            None => ids.first().map(|id| (*id).to_string()),
+            Some(current) => ids
+                .iter()
+                .position(|id| *id == current)
+                .and_then(|index| ids.get(index + 1))
+                .map(|id| (*id).to_string()),
+        };
         self.ensure_selection();
     }
 
@@ -615,6 +703,30 @@ fn value_str<'a>(item: &'a Value, keys: &[&str]) -> Option<&'a str> {
 
 fn non_blank_str(value: Option<&str>) -> Option<&str> {
     value.filter(|s| !s.trim().is_empty())
+}
+
+fn agent_workspace_id(agent: &AgentSummary) -> Option<&str> {
+    agent
+        .extra
+        .get("workspace_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| (!s.trim().is_empty()).then_some(s))
+}
+
+fn workspace_exists(workspaces: &[Value], id: &str) -> bool {
+    workspaces
+        .iter()
+        .filter_map(|workspace| value_str(workspace, &["workspace_id", "id"]))
+        .any(|workspace_id| workspace_id == id)
+}
+
+fn mark_workspace_focused(workspaces: &mut [Value], focused_id: &str) {
+    for workspace in workspaces {
+        let is_focused = value_str(workspace, &["workspace_id", "id"]) == Some(focused_id);
+        if let Some(object) = workspace.as_object_mut() {
+            object.insert("focused".into(), Value::Bool(is_focused));
+        }
+    }
 }
 
 fn upsert_by_id(list: &mut Vec<Value>, item: &Value, id_key: &str) {
@@ -860,6 +972,88 @@ mod tests {
         let second = s.selected_target().unwrap();
         assert_ne!(first, second);
         assert!(s.selected_agent().unwrap().state == AgentState::Working);
+    }
+    #[test]
+    fn workspace_filter_scopes_agents_and_selection() {
+        let mut agent_a = AgentSummary {
+            id: "a".into(),
+            pane_id: Some("pane-a".into()),
+            state: AgentState::Working,
+            ..Default::default()
+        };
+        agent_a.extra.insert("workspace_id".into(), json!("ws-a"));
+        let mut agent_b = AgentSummary {
+            id: "b".into(),
+            pane_id: Some("pane-b".into()),
+            state: AgentState::Working,
+            ..Default::default()
+        };
+        agent_b.extra.insert("workspace_id".into(), json!("ws-b"));
+        let mut s = Store {
+            selected: Some(0),
+            agents: vec![agent_a, agent_b],
+            snapshot: SessionSnapshot {
+                workspaces: vec![
+                    json!({"workspace_id":"ws-a", "label":"Alpha"}),
+                    json!({"workspace_id":"ws-b", "label":"Beta"}),
+                ],
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        s.set_workspace_filter(Some("ws-b".into()));
+
+        let rows = s.filtered_agents();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].1.id, "b");
+        assert_eq!(s.selected_target().as_deref(), Some("pane-b"));
+        assert_eq!(s.workspace_scope_label(), "Beta");
+    }
+
+    #[test]
+    fn workspace_focused_event_marks_snapshot_without_changing_board_scope() {
+        let mut s = Store {
+            snapshot: SessionSnapshot {
+                workspaces: vec![
+                    json!({"workspace_id":"ws-a", "label":"Alpha", "focused":true}),
+                    json!({"workspace_id":"ws-b", "label":"Beta", "focused":false}),
+                ],
+                ..Default::default()
+            },
+            filter: BoardFilter {
+                workspace: Some("ws-a".into()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        s.apply_event(&Event {
+            event: "workspace_focused".into(),
+            data: json!({"workspace_id":"ws-b"}),
+            extra: Default::default(),
+        });
+
+        assert_eq!(s.filter.workspace.as_deref(), Some("ws-a"));
+        assert_eq!(s.snapshot.workspaces.len(), 2);
+        let targets = s.workspace_targets();
+        assert!(targets
+            .iter()
+            .any(|workspace| workspace.id == "ws-b" && workspace.focused));
+        assert!(targets
+            .iter()
+            .any(|workspace| workspace.id == "ws-a" && workspace.scoped));
+    }
+
+    #[test]
+    fn workspace_list_replaces_source_rows_and_clears_stale_scope() {
+        let mut s = Store::default();
+        s.set_workspace_filter(Some("stale".into()));
+
+        s.apply_workspace_values(vec![json!({"workspace_id":"ws-a", "label":"Alpha"})]);
+
+        assert_eq!(s.workspace_count, 1);
+        assert_eq!(s.filter.workspace, None);
+        assert_eq!(s.workspace_targets()[0].id, "ws-a");
     }
 
     #[test]

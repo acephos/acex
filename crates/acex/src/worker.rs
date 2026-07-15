@@ -8,8 +8,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use acex_editor::{EditorBridge, OpenMode, ZedBridge};
 use acex_model::{
-    AttachTarget, Intent, LayoutPreset, Store, WorktreeCreateSpec, WorktreeOpenSpec, ZedOpenMode,
-    DEFAULT_WAIT_TIMEOUT_MS,
+    AttachTarget, Intent, LayoutPreset, Store, WorkspaceFocusSpec, WorktreeCreateSpec,
+    WorktreeOpenSpec, ZedOpenMode, DEFAULT_WAIT_TIMEOUT_MS,
 };
 use herdr_client::{
     connect_with_optional_spawn, extract_agent_rows, extract_read_text,
@@ -183,6 +183,31 @@ async fn handle_intent(
             s.set_toast(attach_toast(&attach));
             s.last_error = None;
         }
+        Intent::WorkspaceList => {
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let result = client.workspace_list().await?;
+            let rows = extract_workspace_values(&result);
+            let n = rows.len();
+            let mut s = lock_store(store.as_ref());
+            s.apply_workspace_values(rows);
+            s.set_toast(format!("workspaces {n}"));
+            s.last_error = None;
+        }
+        Intent::WorkspaceFocus(spec) => {
+            let workspace_id = workspace_focus_id(&spec)?;
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let r = client.workspace_focus(&workspace_id).await?;
+            info!(%workspace_id, ?r, "workspace.focus");
+            let list = client.workspace_list().await.ok();
+            let mut s = lock_store(store.as_ref());
+            if let Some(list) = list {
+                s.apply_workspace_values(extract_workspace_values(&list));
+            }
+            s.set_workspace_filter(Some(workspace_id.clone()));
+            s.set_toast(format!("workspace focused {workspace_id}"));
+            s.last_error = None;
+        }
+
         Intent::WorktreeList => {
             let mut client = connect_with_optional_spawn(target, spawn).await?;
             let r = client.worktree_list(None, None).await?;
@@ -350,6 +375,9 @@ fn layout_apply_request(preset: &LayoutPreset) -> anyhow::Result<LayoutApplyRequ
         workspace_id: preset.workspace_id.as_deref(),
         focus: preset.focus,
     })
+}
+fn workspace_focus_id(spec: &WorkspaceFocusSpec) -> anyhow::Result<String> {
+    non_blank(&spec.workspace_id, "workspace focus target")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -533,6 +561,15 @@ fn format_worktrees(result: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
+fn extract_workspace_values(result: &serde_json::Value) -> Vec<serde_json::Value> {
+    result
+        .get("workspaces")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .or_else(|| result.as_array().cloned())
+        .unwrap_or_default()
+}
+
 fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -694,6 +731,29 @@ mod tests {
         assert_eq!(req.path, Some("../feature"));
         assert_eq!(req.workspace_id, Some("ws-1"));
         assert!(!req.focus);
+    }
+
+    #[test]
+    fn workspace_focus_spec_rejects_blank_target() {
+        let err = workspace_focus_id(&WorkspaceFocusSpec {
+            workspace_id: "  ".into(),
+        })
+        .expect_err("blank workspace focus target should fail");
+
+        assert!(err.to_string().contains("workspace focus target is blank"));
+    }
+
+    #[test]
+    fn extract_workspace_values_reads_list_result() {
+        let rows = extract_workspace_values(&serde_json::json!({
+            "type": "workspace_list",
+            "workspaces": [
+                {"workspace_id": "ws-1", "label": "main"}
+            ]
+        }));
+
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["workspace_id"], "ws-1");
     }
 
     #[test]

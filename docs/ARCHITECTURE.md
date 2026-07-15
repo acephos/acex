@@ -51,9 +51,10 @@ live:      events.subscribe (long-lived pipe/UDS)
            → SubscriptionPush → Event → Store::apply_event
 
 unary:     UI Intent → mpsc → worker → HerdrClient::request (connect-per-call)
-           → agent.focus/send/read/start/list/get, pane.read, worktree.*, notification.show → Store patch
+           → agent.focus/send/read/start/list/get, pane.read, workspace.list/focus, worktree.*, notification.show → Store patch
 handoff:   UI Intent → worker → external Herdr CLI for terminal ownership handoffs
            → agent/session attach, pane run → Store toast/peek patch
+
 
 resync:    stream drop → resync_with_backoff → apply_resnapshot → resubscribe
 

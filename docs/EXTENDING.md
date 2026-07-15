@@ -57,7 +57,7 @@ cargo run -p acex -- --status
 
 ## Recipe A — New operator action (most common)
 
-Current shipped references: palette actions cover focus, peek, send, pane run, start, wait done/blocked, Zed open/new/add-window, attach/session attach, worktrees, resnapshot, refresh agents, and notify. The `Intent` surface also has Zed diff support for worker/editor integration.
+Current shipped references: palette actions cover focus, peek, send, pane run, start, wait done/blocked, Zed open/new/add-window, attach/session attach, workspace focus/scope, worktrees, resnapshot, refresh agents, and notify. The `Intent` surface also has Zed diff support for worker/editor integration.
 
 
 **Goal:** palette + key binding + Herdr (or side-effect) behavior.
@@ -97,7 +97,7 @@ Intent::MyAction { … } => {
 ```
 
 If you need a new Herdr method, add it on `HerdrClient` in `crates/herdr-client/src/ops.rs` first.
-Current unary Herdr surface: `ping` and `session.snapshot` in `HerdrClient`; `ops.rs` wraps `agent.list`, `agent.get`, `agent.focus`, `agent.send`, `agent.read`, `pane.read`, `agent.start`, `worktree.list`, and `notification.show`.
+Current unary Herdr surface: `ping` and `session.snapshot` in `HerdrClient`; `ops.rs` wraps `agent.list`, `agent.get`, `agent.focus`, `agent.send`, `agent.read`, `pane.read`, `agent.start`, `workspace.list`, `workspace.focus`, `worktree.list`, `worktree.create/open/remove`, `layout.apply`, and `notification.show`.
 
 
 ### 4. Tracker + ledger
