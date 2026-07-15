@@ -132,7 +132,8 @@ pub fn build_checkpoint_status(
             "diagnostics": &discovery.diagnostics,
         },
         "config": {
-            "start_presets": &config.start_presets
+            "start_presets": &config.start_presets,
+            "layout_presets": &config.layout_presets
         }
     })
 }
@@ -363,6 +364,7 @@ mod tests {
         assert_eq!(status["ledger"]["valid"], json!(true));
         assert_eq!(status["herdr"]["side_effects"], json!("none"));
         assert_eq!(status["config"]["start_presets"][0]["id"], json!("review"));
+        assert_eq!(status["config"]["layout_presets"], json!([]));
 
         assert_eq!(status["discovery"]["diagnostics"], json!([]));
     }

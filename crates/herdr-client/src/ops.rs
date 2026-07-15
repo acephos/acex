@@ -25,6 +25,14 @@ pub struct WorktreeOpenRequest<'a> {
     pub focus: bool,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct LayoutApplyRequest<'a> {
+    pub root: Value,
+    pub tab_label: Option<&'a str>,
+    pub workspace_id: Option<&'a str>,
+    pub focus: bool,
+}
+
 pub fn worktree_create_params(req: WorktreeCreateRequest<'_>) -> Value {
     let mut params = json!({ "focus": req.focus });
     insert_optional_str(&mut params, "branch", req.branch);
@@ -48,6 +56,17 @@ pub fn worktree_open_params(req: WorktreeOpenRequest<'_>) -> Value {
 
 pub fn worktree_remove_params(workspace_id: &str, force: bool) -> Value {
     json!({ "workspace_id": workspace_id, "force": force })
+}
+
+pub fn layout_apply_params(req: LayoutApplyRequest<'_>) -> Value {
+    let mut params = json!({
+        "root": req.root,
+        "tab_id": null,
+        "focus": req.focus,
+    });
+    insert_optional_str(&mut params, "tab_label", req.tab_label);
+    insert_optional_str(&mut params, "workspace_id", req.workspace_id);
+    params
 }
 
 fn insert_optional_str(params: &mut Value, key: &str, value: Option<&str>) {
@@ -170,6 +189,11 @@ impl<T: Transport> HerdrClient<T> {
         .await
     }
 
+    pub async fn layout_apply(&mut self, req: LayoutApplyRequest<'_>) -> Result<Value> {
+        self.request("layout.apply", Some(layout_apply_params(req)))
+            .await
+    }
+
     pub async fn notification_show(&mut self, title: &str, body: Option<&str>) -> Result<Value> {
         let mut params = json!({ "title": title });
         if let Some(b) = body {
@@ -227,5 +251,29 @@ mod tests {
     fn worktree_remove_params_preserve_force_choice() {
         assert_eq!(worktree_remove_params("ws-1", false)["force"], false);
         assert_eq!(worktree_remove_params("ws-1", true)["force"], true);
+    }
+
+    #[test]
+    fn layout_apply_params_force_new_tab_contract() {
+        let root = json!({
+            "type": "split",
+            "direction": "right",
+            "ratio": 0.5,
+            "first": {"type": "pane", "label": "left"},
+            "second": {"type": "pane", "label": "right"}
+        });
+
+        let params = layout_apply_params(LayoutApplyRequest {
+            root,
+            tab_label: Some("Dual"),
+            workspace_id: Some("ws-1"),
+            focus: true,
+        });
+
+        assert_eq!(params["tab_id"], Value::Null);
+        assert_eq!(params["tab_label"], "Dual");
+        assert_eq!(params["workspace_id"], "ws-1");
+        assert_eq!(params["focus"], true);
+        assert_eq!(params["root"]["type"], "split");
     }
 }

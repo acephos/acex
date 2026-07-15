@@ -3,8 +3,8 @@
 mod palette;
 
 use acex_model::{
-    AgentState, AttachTarget, ConnState, Intent, StartPreset, Store, WaitBadge, WorktreeCreateSpec,
-    WorktreeOpenSpec, WorktreeRemoveSpec,
+    AgentState, AttachTarget, ConnState, Intent, LayoutPreset, StartPreset, Store, WaitBadge,
+    WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec,
 };
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
@@ -47,6 +47,7 @@ enum InputKind {
     WorktreeOpen,
     WorktreeRemove,
     ZedDiff,
+    LayoutApply,
 }
 
 pub struct App {
@@ -57,17 +58,19 @@ pub struct App {
     intent_tx: Option<Sender<Intent>>,
     status_flash: Option<String>,
     start_presets: Vec<StartPreset>,
+    layout_presets: Vec<LayoutPreset>,
 }
 
 impl App {
     pub fn with_shared(store: Arc<Mutex<Store>>, intent_tx: Sender<Intent>) -> Self {
-        Self::with_shared_and_presets(store, intent_tx, Vec::new())
+        Self::with_shared_and_presets(store, intent_tx, Vec::new(), Vec::new())
     }
 
     pub fn with_shared_and_presets(
         store: Arc<Mutex<Store>>,
         intent_tx: Sender<Intent>,
         start_presets: Vec<StartPreset>,
+        layout_presets: Vec<LayoutPreset>,
     ) -> Self {
         Self {
             store,
@@ -77,6 +80,7 @@ impl App {
             intent_tx: Some(intent_tx),
             status_flash: None,
             start_presets,
+            layout_presets,
         }
     }
 
@@ -266,6 +270,12 @@ fn submit_input(app: &mut App) {
                 Some((old, new)) => app.send_intent(Intent::DiffZed { old, new }),
                 None => app.status_flash = Some("zed diff needs <old-path> <new-path>".into()),
             },
+            InputKind::LayoutApply => match parse_layout_selector(&buffer, &app.layout_presets) {
+                Some(preset) => app.send_intent(Intent::ApplyLayout(preset.clone())),
+                None => {
+                    app.status_flash = Some("layout apply needs configured preset id/name".into())
+                }
+            },
             InputKind::FilterQuery => {
                 let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
                 s.filter.query = buffer;
@@ -333,6 +343,28 @@ fn start_input_title(presets: &[StartPreset]) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!("start agent · @{ids} OR name|cmd args OR cmd args")
+}
+
+fn parse_layout_selector<'a>(raw: &str, presets: &'a [LayoutPreset]) -> Option<&'a LayoutPreset> {
+    let selector = raw.trim().strip_prefix('@').unwrap_or(raw.trim());
+    if selector.is_empty() {
+        return (presets.len() == 1).then(|| &presets[0]);
+    }
+    presets
+        .iter()
+        .find(|preset| preset.id == selector || preset.name == selector)
+}
+
+fn layout_input_title(presets: &[LayoutPreset]) -> String {
+    if presets.is_empty() {
+        return "layout apply unavailable · configure [[layout_presets]]".into();
+    }
+    let ids = presets
+        .iter()
+        .map(|preset| preset.id.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("layout apply · @{ids} · opens new tab, no live PTY preserve")
 }
 
 fn shellish_split(s: &str) -> Vec<String> {
@@ -521,6 +553,18 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
                 kind: InputKind::ZedDiff,
             };
         }
+        PaletteAction::LayoutApply => {
+            if app.layout_presets.is_empty() {
+                app.status_flash = Some("no layout presets configured".into());
+            } else {
+                app.mode = Mode::Input {
+                    title: layout_input_title(&app.layout_presets),
+                    buffer: String::new(),
+                    kind: InputKind::LayoutApply,
+                };
+            }
+        }
+
         PaletteAction::Attach => app.send_intent(Intent::Attach {
             target: AttachTarget::SelectedAgent,
         }),
@@ -913,6 +957,61 @@ mod tests {
                 ..
             } => {}
             other => panic!("expected zed diff input mode, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn layout_selector_resolves_configured_preset() {
+        let presets = vec![LayoutPreset {
+            id: "dual".into(),
+            name: "Dual".into(),
+            root: acex_model::LayoutNode::Pane {
+                command: None,
+                cwd: None,
+                env: Default::default(),
+                label: Some("single".into()),
+                pane_id: None,
+            },
+            tab_label: Some("Dual tab".into()),
+            workspace_id: None,
+            focus: false,
+        }];
+
+        let preset = parse_layout_selector("@dual", &presets).expect("layout preset");
+
+        assert_eq!(preset.name, "Dual");
+        assert_eq!(preset.tab_label.as_deref(), Some("Dual tab"));
+    }
+
+    #[test]
+    fn layout_palette_action_opens_preset_input() {
+        let (tx, _rx) = std::sync::mpsc::channel();
+        let store = Arc::new(Mutex::new(Store::default()));
+        let layout_presets = vec![LayoutPreset {
+            id: "single".into(),
+            name: "Single".into(),
+            root: acex_model::LayoutNode::Pane {
+                command: None,
+                cwd: None,
+                env: Default::default(),
+                label: None,
+                pane_id: None,
+            },
+            tab_label: None,
+            workspace_id: None,
+            focus: false,
+        }];
+        let mut app = App::with_shared_and_presets(store, tx, Vec::new(), layout_presets);
+
+        apply_palette_action(&mut app, PaletteAction::LayoutApply);
+
+        match app.mode {
+            Mode::Input {
+                kind: InputKind::LayoutApply,
+                title,
+                ..
+            } => assert!(title.contains("no live PTY preserve")),
+            other => panic!("expected layout input mode, got {other:?}"),
         }
     }
 

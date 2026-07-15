@@ -8,13 +8,13 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use acex_editor::{EditorBridge, OpenMode, ZedBridge};
 use acex_model::{
-    AttachTarget, Intent, Store, WorktreeCreateSpec, WorktreeOpenSpec, ZedOpenMode,
+    AttachTarget, Intent, LayoutPreset, Store, WorktreeCreateSpec, WorktreeOpenSpec, ZedOpenMode,
     DEFAULT_WAIT_TIMEOUT_MS,
 };
 use herdr_client::{
     connect_with_optional_spawn, extract_agent_rows, extract_read_text,
-    resolve::session_socket_path, resync_with_backoff, SocketTarget, WorktreeCreateRequest,
-    WorktreeOpenRequest,
+    resolve::session_socket_path, resync_with_backoff, LayoutApplyRequest, SocketTarget,
+    WorktreeCreateRequest, WorktreeOpenRequest,
 };
 use tracing::{info, warn};
 
@@ -156,6 +156,20 @@ async fn handle_intent(
             editor.diff(&old, &new)?;
             let mut s = lock_store(store.as_ref());
             s.set_toast("zed --diff");
+            s.last_error = None;
+        }
+        Intent::ApplyLayout(preset) => {
+            let label = preset
+                .tab_label
+                .as_deref()
+                .unwrap_or(&preset.name)
+                .to_string();
+            let request = layout_apply_request(&preset)?;
+            let mut client = connect_with_optional_spawn(target, spawn).await?;
+            let r = client.layout_apply(request).await?;
+            info!(preset = %preset.id, tab = %label, ?r, "layout.apply");
+            let mut s = lock_store(store.as_ref());
+            s.set_toast(format!("layout {label} · new tab · no live PTY preserve"));
             s.last_error = None;
         }
         Intent::Attach { target: attach } => {
@@ -326,6 +340,16 @@ fn worktree_open_request(spec: &WorktreeOpenSpec) -> WorktreeOpenRequest<'_> {
         workspace_id: spec.workspace_id.as_deref(),
         focus: spec.focus,
     }
+}
+
+fn layout_apply_request(preset: &LayoutPreset) -> anyhow::Result<LayoutApplyRequest<'_>> {
+    let root = serde_json::to_value(&preset.root)?;
+    Ok(LayoutApplyRequest {
+        root,
+        tab_label: preset.tab_label.as_deref().or(Some(preset.name.as_str())),
+        workspace_id: preset.workspace_id.as_deref(),
+        focus: preset.focus,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -670,6 +694,47 @@ mod tests {
         assert_eq!(req.path, Some("../feature"));
         assert_eq!(req.workspace_id, Some("ws-1"));
         assert!(!req.focus);
+    }
+
+    #[test]
+    fn layout_preset_maps_to_new_tab_apply_request() {
+        let preset = LayoutPreset {
+            id: "dual".into(),
+            name: "Dual".into(),
+            tab_label: None,
+            workspace_id: Some("ws-1".into()),
+            focus: true,
+            root: acex_model::LayoutNode::Split {
+                direction: acex_model::SplitDirection::Right,
+                ratio: 0.5,
+                first: Box::new(acex_model::LayoutNode::Pane {
+                    command: None,
+                    cwd: None,
+                    env: Default::default(),
+                    label: Some("left".into()),
+                    pane_id: None,
+                }),
+                second: Box::new(acex_model::LayoutNode::Pane {
+                    command: Some(vec!["cargo".into(), "test".into()]),
+                    cwd: Some("crates".into()),
+                    env: Default::default(),
+                    label: Some("right".into()),
+                    pane_id: None,
+                }),
+            },
+        };
+
+        let req = layout_apply_request(&preset).expect("layout apply request");
+
+        assert_eq!(req.tab_label, Some("Dual"));
+        assert_eq!(req.workspace_id, Some("ws-1"));
+        assert!(req.focus);
+        assert_eq!(req.root["type"], "split");
+        assert_eq!(req.root["direction"], "right");
+        assert_eq!(
+            req.root["second"]["command"],
+            serde_json::json!(["cargo", "test"])
+        );
     }
 
     #[test]
