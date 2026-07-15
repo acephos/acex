@@ -223,26 +223,14 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f15-pane-run",
+  "latest_comment_id": "2026-07-15-f18-zed-diff",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "b8dd171e76fae64c1d64c83f6ef16de7bc51e9aef8061401d89710224b83df4d",
-    "entry_count": 13
+    "latest_hash": "8e6d0932babc5cde1f2d6be42d5313713eb526217494f33bd3b1813349f4dd0a",
+    "entry_count": 14
   },
   "next_ready": [
-    {
-      "id": "F18",
-      "title": "Diff in Zed",
-      "status": "todo",
-      "phase": "G1.5 recommended",
-      "depends_on": ["F17"],
-      "owner": null,
-      "last_touched": null,
-      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Zed diff action validates paths and opens the external editor bridge.",
-      "proof": ["editor/intent tests", "manual status/smoke check"]
-    },
     {
       "id": "F19",
       "title": "Layout presets",
@@ -290,7 +278,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">53</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">60</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -304,8 +292,8 @@
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F18 · Diff in Zed</strong> — deps=F17; next recommended G1.5 slice after F15.</li>
-        <li><strong>Also ready:</strong> F19 layouts, F21 paths chrome, F26 workspace focus.</li>
+        <li><strong>F19 · Layout presets</strong> — deps=F02; next recommended G1.5 slice after F18.</li>
+        <li><strong>Also ready:</strong> F21 paths chrome, F26 workspace focus.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -366,7 +354,7 @@
       <div class="phase active">
         <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-doing">doing</span> recommended polish; F13 and F15 done; next F18</p>
+        <p><span class="st st-doing">doing</span> recommended polish; F13, F15, and F18 done; next F19</p>
       </div>
 
       <div class="phase post">
@@ -512,10 +500,10 @@
               <td><span class="badge s">S</span></td><td>F06/F12</td><td>z / palette; cwd from agent</td>
             </tr>
             <tr>
-              <td>F18</td><td><span class="st st-todo">todo</span></td>
+              <td>F18</td><td><span class="st st-done">done</span></td>
               <td>Diff in Zed</td><td class="pri-p1">P1</td><td>1.5</td>
               <td>zed --diff</td><td>Files exist</td>
-              <td><span class="badge s">S</span></td><td>F17</td><td>API on ZedBridge ready</td>
+              <td><span class="badge s">S</span></td><td>F17</td><td>Palette diff prompt; worker validates paths before bridge handoff</td>
             </tr>
             <tr>
               <td>F19</td><td><span class="st st-todo">todo</span></td>
@@ -625,6 +613,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f18-zed-diff">
+        <div class="meta"><span class="tag">2026-07-15</span> · F18 Diff in Zed · agent</div>
+        <p style="margin:0">
+          Shipped G1.5 Zed diff: the command palette now exposes a <code>Diff in Zed…</code> path-pair prompt, UI input maps exactly two paths to <code>Intent::DiffZed</code>, and the worker validates both paths exist before invoking the editor bridge <code>zed --diff</code> handoff. Diff remains owned by the external editor; acex only validates and dispatches the handoff.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f15-pane-run">
         <div class="meta"><span class="tag">2026-07-15</span> · F15 Pane run · agent</div>
@@ -757,7 +752,7 @@
           Board + detail + Ctrl+K palette. Intents via mpsc → async worker (unary Herdr RPC).
           Keys: j/k select, f focus, r peek, s send, w/b wait, a attach, z zed, t worktrees,
           1–5 filter, / search. Start form: <code>name|cmd args</code>.
-          Smoke peeks selected pane. F13 worktree CRUD and F15 pane run are done; F18/F19/F21/F26 remain G1.5.
+          Smoke peeks selected pane. F13 worktree CRUD, F15 pane run, and F18 Zed diff are done; F19/F21/F26 remain G1.5.
         </p>
       </div>
 
@@ -1061,6 +1056,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F18 shipped command-palette Zed diff with exact two-path input and worker-side existing-path validation before editor bridge handoff.</li>
         <li><strong>2026-07-15</strong> — F15 shipped selected-pane command handoff through <code>herdr pane run</code> with post-run <code>pane.read</code> peek refresh.</li>
         <li><strong>2026-07-15</strong> — F13 shipped worktree create/open/remove intents, palette flows, Herdr RPC wrappers, explicit remove <code>--force</code>, and post-mutation list refresh.</li>
         <li><strong>2026-07-15</strong> — Tightened checkpoint continuation definition of done to require PR creation, green required GitHub checks, and merge when branch protection permits.</li>
