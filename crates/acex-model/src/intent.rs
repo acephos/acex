@@ -89,6 +89,10 @@ pub struct WorktreeRemoveSpec {
     pub workspace_id: String,
     pub force: bool,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceFocusSpec {
+    pub workspace_id: String,
+}
 
 /// Commands raised by the UI; executed on the async Herdr worker.
 #[derive(Debug, Clone)]
@@ -123,6 +127,8 @@ pub enum Intent {
     Attach {
         target: AttachTarget,
     },
+    WorkspaceList,
+    WorkspaceFocus(WorkspaceFocusSpec),
     WorktreeList,
     WorktreeCreate(WorktreeCreateSpec),
     WorktreeOpen(WorktreeOpenSpec),

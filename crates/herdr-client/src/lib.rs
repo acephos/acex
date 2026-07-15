@@ -20,8 +20,8 @@ pub mod subscribe;
 pub mod transport;
 
 pub use ops::{
-    extract_agent_rows, extract_read_text, LayoutApplyRequest, WorktreeCreateRequest,
-    WorktreeOpenRequest,
+    extract_agent_rows, extract_read_text, workspace_focus_params, LayoutApplyRequest,
+    WorktreeCreateRequest, WorktreeOpenRequest,
 };
 pub use resolve::{default_socket_path, resolve_socket_path, SocketTarget};
 pub use stream::NdjsonStream;
@@ -300,6 +300,17 @@ mod tests {
         let v = c.agent_focus("w1:p1").await.expect("focus");
         assert_eq!(v["type"], "agent_focused");
         assert_eq!(v["target"], "w1:p1");
+    }
+
+    #[tokio::test]
+    async fn mock_unary_workspace_focus() {
+        let body =
+            br#"{"id":"x","result":{"type":"workspace_focused","workspace_id":"ws-1"}}"#.to_vec();
+        let mut c = HerdrClient::new(MockTransport::with_responses(vec![body]));
+        c.connect().await.unwrap();
+        let v = c.workspace_focus("ws-1").await.expect("workspace focus");
+        assert_eq!(v["type"], "workspace_focused");
+        assert_eq!(v["workspace_id"], "ws-1");
     }
 
     #[tokio::test]

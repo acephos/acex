@@ -4,7 +4,8 @@ mod palette;
 
 use acex_model::{
     AgentState, AttachTarget, ConnState, Intent, LayoutPreset, PathTarget, StartPreset, Store,
-    WaitBadge, WorktreeCreateSpec, WorktreeOpenSpec, WorktreeRemoveSpec,
+    WaitBadge, WorkspaceFocusSpec, WorkspaceTarget, WorktreeCreateSpec, WorktreeOpenSpec,
+    WorktreeRemoveSpec,
 };
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
@@ -43,6 +44,7 @@ enum InputKind {
     PaneRun,
     FilterQuery,
     Notify,
+    WorkspaceFocus,
     WorktreeCreate,
     WorktreeOpen,
     WorktreeRemove,
@@ -173,6 +175,14 @@ fn handle_key(app: &mut App, code: KeyCode, mods: KeyModifiers) {
                 app.mode = Mode::Palette;
                 return;
             }
+            if mods.contains(KeyModifiers::CONTROL)
+                && matches!(code, KeyCode::Char('w') | KeyCode::Char('W'))
+            {
+                let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+                s.cycle_workspace_filter();
+                app.status_flash = Some(format!("workspace scope {}", s.workspace_scope_label()));
+                return;
+            }
             match code {
                 KeyCode::Char('q') | KeyCode::Esc => app.should_quit = true,
                 KeyCode::Up | KeyCode::Char('k') => {
@@ -281,6 +291,12 @@ fn submit_input(app: &mut App) {
                 s.filter.query = buffer;
                 s.ensure_selection();
             }
+            InputKind::WorkspaceFocus => match parse_workspace_selector(&buffer, &app.store) {
+                Some(workspace_id) => {
+                    app.send_intent(Intent::WorkspaceFocus(WorkspaceFocusSpec { workspace_id }))
+                }
+                None => app.status_flash = Some("workspace focus needs workspace id/name".into()),
+            },
             InputKind::Notify => {
                 if !buffer.is_empty() {
                     app.send_intent(Intent::Notify {
@@ -365,6 +381,33 @@ fn layout_input_title(presets: &[LayoutPreset]) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!("layout apply · @{ids} · opens new tab, no live PTY preserve")
+}
+fn parse_workspace_selector(raw: &str, store: &Arc<Mutex<Store>>) -> Option<String> {
+    let selector = raw.trim().strip_prefix('@').unwrap_or(raw.trim());
+    if selector.is_empty() {
+        return None;
+    }
+    let s = store.lock().unwrap_or_else(|e| e.into_inner());
+    s.workspace_targets()
+        .into_iter()
+        .find(|workspace| workspace.id == selector || workspace.label == Some(selector))
+        .map(|workspace| workspace.id.to_string())
+        .or_else(|| Some(selector.to_string()))
+}
+
+fn workspace_input_title(store: &Arc<Mutex<Store>>) -> String {
+    let s = store.lock().unwrap_or_else(|e| e.into_inner());
+    let ids = s
+        .workspace_targets()
+        .into_iter()
+        .map(|workspace| workspace.id)
+        .collect::<Vec<_>>()
+        .join(", ");
+    if ids.is_empty() {
+        "workspace focus · workspace id/name".into()
+    } else {
+        format!("workspace focus · @{ids} OR workspace id/name")
+    }
 }
 
 fn shellish_split(s: &str) -> Vec<String> {
@@ -571,6 +614,19 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
         PaletteAction::AttachSession => app.send_intent(Intent::Attach {
             target: AttachTarget::Session,
         }),
+        PaletteAction::WorkspaceList => app.send_intent(Intent::WorkspaceList),
+        PaletteAction::WorkspaceFocus => {
+            app.mode = Mode::Input {
+                title: workspace_input_title(&app.store),
+                buffer: String::new(),
+                kind: InputKind::WorkspaceFocus,
+            };
+        }
+        PaletteAction::WorkspaceScopeClear => {
+            let mut s = app.store.lock().unwrap_or_else(|e| e.into_inner());
+            s.set_workspace_filter(None);
+            app.status_flash = Some("workspace scope all".into());
+        }
         PaletteAction::WorktreeList => app.send_intent(Intent::WorktreeList),
         PaletteAction::WorktreeCreate => {
             app.mode = Mode::Input {
@@ -661,9 +717,10 @@ fn draw_board(f: &mut ratatui::Frame, area: Rect, store: &Store) {
         None => "all".to_string(),
         Some(s) => s.as_str().to_string(),
     };
+    let workspace_label = store.workspace_scope_label();
     let mut items: Vec<ListItem> = Vec::new();
     items.push(ListItem::new(format!(
-        "filter:{filter_label} q={:?}  [i{} w{} b{} d{} u{}]",
+        "filter:{filter_label} workspace:{workspace_label} q={:?}  [i{} w{} b{} d{} u{}]",
         store.filter.query, counts[0].1, counts[1].1, counts[2].1, counts[3].1, counts[4].1,
     )));
 
@@ -700,7 +757,7 @@ fn draw_board(f: &mut ratatui::Frame, area: Rect, store: &Store) {
     let list = List::new(items).block(
         Block::default()
             .borders(Borders::ALL)
-            .title("agents · j/k · 1-5 filter · / search"),
+            .title("agents · j/k · 1-5 filter · Ctrl+W workspace · / search"),
     );
     f.render_widget(list, area);
 }
@@ -727,6 +784,14 @@ fn draw_detail(f: &mut ratatui::Frame, area: Rect, store: &Store) {
         lines.push(Line::from("paths (read-only handoff targets):"));
         for target in paths.iter().take(8) {
             lines.push(Line::from(path_target_line(target)));
+        }
+    }
+    let workspaces = store.workspace_targets();
+    if !workspaces.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::from("workspaces (source truth, scope marker only):"));
+        for workspace in workspaces.iter().take(8) {
+            lines.push(Line::from(workspace_target_line(workspace)));
         }
     }
 
@@ -796,7 +861,7 @@ fn draw_footer(f: &mut ratatui::Frame, area: Rect, store: &Store, app: &App) {
         .or(store.toast.as_deref())
         .unwrap_or("");
     let help = format!(
-        " Ctrl+K palette · f focus · r peek · s send · w/b wait · a attach · z zed · t worktrees · q quit  {flash}"
+        " Ctrl+K palette · Ctrl+W workspace · f focus · r peek · s send · w/b wait · a attach · z zed · t worktrees · q quit  {flash}"
     );
     let p = Paragraph::new(help).block(Block::default().borders(Borders::ALL).title("keys"));
     f.render_widget(p, area);
@@ -822,6 +887,16 @@ fn path_target_line(target: &PathTarget<'_>) -> String {
         (None, None) => "-".to_string(),
     };
     format!("  {mark} {} {name} → {}", target.source, target.path)
+}
+
+fn workspace_target_line(target: &WorkspaceTarget<'_>) -> String {
+    let scope = if target.scoped { "▶" } else { " " };
+    let focused = if target.focused { "*" } else { " " };
+    let name = match target.label {
+        Some(label) if label != target.id => format!("{label} ({})", target.id),
+        _ => target.id.to_string(),
+    };
+    format!("  {scope}{focused} workspace {name}")
 }
 
 fn now_ms() -> u64 {
@@ -1064,5 +1139,34 @@ mod tests {
             path_target_line(&row),
             "  ▶ agent builder (pane-1) → /repo/project"
         );
+    }
+
+    #[test]
+    fn workspace_target_line_marks_scope_and_focus_without_hiding_source() {
+        let row = WorkspaceTarget {
+            id: "ws-1",
+            label: Some("main"),
+            focused: true,
+            scoped: true,
+        };
+
+        assert_eq!(workspace_target_line(&row), "  ▶* workspace main (ws-1)");
+    }
+
+    #[test]
+    fn workspace_focus_palette_action_opens_selector_input() {
+        let (tx, _rx) = std::sync::mpsc::channel();
+        let store = Arc::new(Mutex::new(Store::default()));
+        let mut app = App::with_shared(store, tx);
+
+        apply_palette_action(&mut app, PaletteAction::WorkspaceFocus);
+
+        match app.mode {
+            Mode::Input {
+                kind: InputKind::WorkspaceFocus,
+                ..
+            } => {}
+            other => panic!("expected workspace focus input mode, got {other:?}"),
+        }
     }
 }

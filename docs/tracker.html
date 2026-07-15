@@ -223,27 +223,14 @@
   "active_phase": "G1.5 recommended",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-f21-paths-chrome",
+  "latest_comment_id": "2026-07-15-f26-workspace-focus",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "e8ffdcd867f785d42a299dfc4d4f140d7da916db7750b72c2f4e19258fe87bbf",
-    "entry_count": 16
+    "latest_hash": "d9b2246d4ae74a2f7ac2bb9d3c7b9c83ffaaec24edf76e4bc8c42a52f245d469",
+    "entry_count": 17
   },
-  "next_ready": [
-    {
-      "id": "F26",
-      "title": "Workspace focus",
-      "status": "todo",
-      "phase": "G1.5 recommended",
-      "depends_on": ["F02"],
-      "owner": null,
-      "last_touched": null,
-      "takeover": "safe_if_no_owner_or_last_touched_over_24h",
-      "acceptance": "Board scopes can focus workspace context without hiding source-of-truth state.",
-      "proof": ["model/UI tests", "manual status/smoke check"]
-    }
-  ],
+  "next_ready": [],
   "blocked": []
 }
     </script>
@@ -254,7 +241,7 @@
       <div class="kpi">
         <div class="cell"><div class="n">G1.5</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">rec</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">67</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">76</div><div class="l">Tests pass</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
         <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
@@ -262,13 +249,13 @@
       <div class="say" style="margin-top:16px">
         <span class="soul">♥</span>
         <p style="margin:0">
-          <strong>Active work:</strong> G1 usable core and polish blockers are shipped — board, filters, palette,
-          focus/peek/send/start/wait/zed/attach/worktrees via intent worker. Current work moves to recommended G1.5.
+          <strong>Active work:</strong> G1 usable core, G1 polish blockers, and recommended G1.5 are shipped — board, filters, palette,
+          focus/peek/send/start/wait/zed/attach/worktrees/workspaces via intent worker. Next work should come from a new tracker checkpoint item or explicit Phase 2 direction.
         </p>
       </div>
       <h3>* Next ready work</h3>
       <ol>
-        <li><strong>F26 · Workspace focus</strong> — deps=F02; next recommended G1.5 slice after F21.</li>
+        <li><strong>None</strong> — G1.5 recommended tracker features are done/cut after F26; add the next tracker item before another checkpoint continuation.</li>
       </ol>
       <p class="dim">Takeover rule for next-ready rows: safe if no owner or <code>last_touched</code> is over 24h. G1.5 recommended work is dependency-ready unless owner metadata changes.</p>
       <h3>* Stateless checkpoint</h3>
@@ -329,7 +316,7 @@
       <div class="phase active">
         <h3>* Phase 1.5 — Worktrees + layouts · RECOMMENDED (G1.5) · ACTIVE</h3>
         <p class="dim">Features: F13, F15–F16, F18–F19, F21, F26</p>
-        <p><span class="st st-doing">doing</span> recommended polish; F13, F15, F18, F19, and F21 done; next F26</p>
+        <p><span class="st st-done">done</span> recommended polish; F13, F15, F18, F19, F21, and F26 done; G1.5 recommended complete</p>
       </div>
 
       <div class="phase post">
@@ -525,10 +512,10 @@
               <td><span class="badge s">S</span></td><td>F06</td><td>1–5 / keys</td>
             </tr>
             <tr>
-              <td>F26</td><td><span class="st st-todo">todo</span></td>
+              <td>F26</td><td><span class="st st-done">done</span></td>
               <td>Workspace focus</td><td class="pri-p1">P1</td><td>1.5</td>
               <td>workspace.list/focus</td><td>Board scopes</td>
-              <td><span class="badge s">S</span></td><td>F02</td><td></td>
+              <td><span class="badge s">S</span></td><td>F02</td><td>done 2026-07-15; typed <code>WorkspaceList</code>/<code>WorkspaceFocus</code> intents + Herdr RPC wrappers; palette can refresh/focus workspaces, <code>Ctrl+W</code> cycles local board scope, and detail pane keeps source-truth workspace focus/scope rows visible; proof=workspace model/UI/client/worker tests + status/smoke gates</td>
             </tr>
             <tr>
               <td>F27</td><td><span class="st st-done">done</span></td>
@@ -588,6 +575,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-15-f26-workspace-focus">
+        <div class="meta"><span class="tag">2026-07-15</span> · F26 Workspace focus · agent</div>
+        <p style="margin:0">
+          Shipped G1.5 workspace focus: acex now exposes <code>workspace.list</code>/<code>workspace.focus</code> through typed intents and Herdr client wrappers, the palette can refresh or focus a workspace, <code>Ctrl+W</code> cycles the local board workspace scope, and the detail pane lists source-truth workspaces with separate Herdr-focused and board-scoped markers. Subscription <code>workspace_focused</code> events update snapshot focus markers without silently changing the operator's board scope.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-f21-paths-chrome">
         <div class="meta"><span class="tag">2026-07-15</span> · F21 Paths chrome · agent</div>
@@ -1045,6 +1039,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-07-15</strong> — F26 shipped workspace list/focus wrappers, palette/input flows, <code>Ctrl+W</code> board scoping, and source-truth workspace rows that separate Herdr focus from local board scope.</li>
         <li><strong>2026-07-15</strong> — F21 shipped read-only paths chrome from snapshot agent/workspace/pane cwd/path values, exposing handoff targets in the detail pane before Zed/open actions.</li>
         <li><strong>2026-07-15</strong> — F19 shipped config/project layout presets, palette apply flow, status/checkpoint JSON exposure, and <code>layout.apply</code> handoff with explicit new-tab/no-live-PTY-preserve semantics.</li>
         <li><strong>2026-07-15</strong> — F18 shipped command-palette Zed diff with exact two-path input and worker-side existing-path validation before editor bridge handoff.</li>

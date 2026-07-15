@@ -57,6 +57,9 @@ pub fn worktree_open_params(req: WorktreeOpenRequest<'_>) -> Value {
 pub fn worktree_remove_params(workspace_id: &str, force: bool) -> Value {
     json!({ "workspace_id": workspace_id, "force": force })
 }
+pub fn workspace_focus_params(workspace_id: &str) -> Value {
+    json!({ "workspace_id": workspace_id })
+}
 
 pub fn layout_apply_params(req: LayoutApplyRequest<'_>) -> Value {
     let mut params = json!({
@@ -78,6 +81,17 @@ fn insert_optional_str(params: &mut Value, key: &str, value: Option<&str>) {
 impl<T: Transport> HerdrClient<T> {
     pub async fn agent_list(&mut self) -> Result<Value> {
         self.request("agent.list", Some(json!({}))).await
+    }
+    pub async fn workspace_list(&mut self) -> Result<Value> {
+        self.request("workspace.list", Some(json!({}))).await
+    }
+
+    pub async fn workspace_focus(&mut self, workspace_id: &str) -> Result<Value> {
+        self.request(
+            "workspace.focus",
+            Some(workspace_focus_params(workspace_id)),
+        )
+        .await
     }
 
     pub async fn agent_get(&mut self, target: &str) -> Result<Value> {
@@ -251,6 +265,13 @@ mod tests {
     fn worktree_remove_params_preserve_force_choice() {
         assert_eq!(worktree_remove_params("ws-1", false)["force"], false);
         assert_eq!(worktree_remove_params("ws-1", true)["force"], true);
+    }
+    #[test]
+    fn workspace_focus_params_preserve_target_id() {
+        assert_eq!(
+            workspace_focus_params("ws-1"),
+            json!({"workspace_id": "ws-1"})
+        );
     }
 
     #[test]
