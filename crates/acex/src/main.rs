@@ -95,15 +95,89 @@ fn init_tracing(log_to_file: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Known `acex` CLI flags. Any other argument is rejected by `parse_args`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct AcexArgs {
+    help: bool,
+    offline: bool,
+    smoke: bool,
+    smoke_reconnect: bool,
+    status: bool,
+    checkpoint_status: bool,
+}
+
+const USAGE: &str = "\
+USAGE:
+    acex [FLAGS]
+
+Herdr-centric agent control plane.
+
+FLAGS:
+    -h, --help              Print usage and exit
+        --offline           Run without connecting to Herdr (offline mode)
+        --smoke             Run the Phase 1 smoke scenario
+        --smoke-reconnect   Run the F04 reconnect smoke scenario
+        --status            Print machine-readable status JSON and exit
+        --checkpoint-status Print stateless continuation checkpoint status and exit
+";
+
+fn print_usage() {
+    print!("{USAGE}");
+}
+
+fn eprint_usage() {
+    eprint!("{USAGE}");
+}
+
+/// Parse `acex` CLI arguments.
+///
+/// Recognizes only the documented boolean flags; `-h`/`--help` is treated as a
+/// flag. Any other `-`-prefixed token or stray positional argument is rejected.
+fn parse_args(args: &[String]) -> Result<AcexArgs, String> {
+    let mut parsed = AcexArgs::default();
+    for arg in &args[1..] {
+        match arg.as_str() {
+            "--help" | "-h" => parsed.help = true,
+            "--offline" => parsed.offline = true,
+            "--smoke" => parsed.smoke = true,
+            "--smoke-reconnect" => parsed.smoke_reconnect = true,
+            "--status" => parsed.status = true,
+            "--checkpoint-status" => parsed.checkpoint_status = true,
+            other if other.starts_with('-') => {
+                return Err(format!("unknown flag: {other}"));
+            }
+            other => return Err(format!("unexpected argument: {other}")),
+        }
+    }
+    Ok(parsed)
+}
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-    let offline = args.iter().any(|a| a == "--offline");
-    let smoke = args.iter().any(|a| a == "--smoke");
-    let smoke_reconnect = args.iter().any(|a| a == "--smoke-reconnect");
-    // Machine-readable discovery + connection summary (Pi-like JSON surface).
-    let status = args.iter().any(|a| a == "--status");
-    let checkpoint_status = args.iter().any(|a| a == "--checkpoint-status");
+    let raw_args: Vec<String> = std::env::args().collect();
+    let parsed = match parse_args(&raw_args) {
+        Ok(p) => p,
+        Err(msg) => {
+            eprintln!("acex: {msg}");
+            eprint_usage();
+            let _ = io::stderr().flush();
+            std::process::exit(2);
+        }
+    };
+
+    if parsed.help {
+        print_usage();
+        let _ = io::stdout().flush();
+        std::process::exit(0);
+    }
+
+    let AcexArgs {
+        offline,
+        smoke,
+        smoke_reconnect,
+        status,
+        checkpoint_status,
+        ..
+    } = parsed;
 
     if !checkpoint_status {
         let interactive_tui = !status && !smoke && !smoke_reconnect;
@@ -604,5 +678,60 @@ async fn run_live_loop(
         }
         tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
         backoff_ms = (backoff_ms.saturating_mul(2)).min(5_000);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn argv(parts: &[&str]) -> Vec<String> {
+        let mut v = vec!["acex".to_string()];
+        v.extend(parts.iter().map(|s| s.to_string()));
+        v
+    }
+
+    #[test]
+    fn parses_known_flags() {
+        let a = parse_args(&argv(&["--offline", "--status"])).unwrap();
+        assert!(a.offline && a.status);
+        assert!(!a.smoke && !a.help && !a.smoke_reconnect && !a.checkpoint_status);
+    }
+
+    #[test]
+    fn repeated_known_flags_are_idempotent() {
+        let a = parse_args(&argv(&["--smoke", "--smoke"])).unwrap();
+        assert!(a.smoke);
+    }
+
+    #[test]
+    fn help_flag_recognized() {
+        assert!(parse_args(&argv(&["-h"])).unwrap().help);
+        assert!(parse_args(&argv(&["--help"])).unwrap().help);
+    }
+
+    #[test]
+    fn unknown_long_flag_rejected() {
+        assert!(parse_args(&argv(&["--definitely-not-a-flag"])).is_err());
+    }
+
+    #[test]
+    fn unknown_short_flag_rejected() {
+        assert!(parse_args(&argv(&["-x"])).is_err());
+    }
+
+    #[test]
+    fn unknown_flag_with_help_rejected() {
+        assert!(parse_args(&argv(&["--help", "--bogus"])).is_err());
+    }
+
+    #[test]
+    fn stray_positional_rejected() {
+        assert!(parse_args(&argv(&["foo"])).is_err());
+    }
+
+    #[test]
+    fn no_args_is_default() {
+        assert_eq!(parse_args(&argv(&[])).unwrap(), AcexArgs::default());
     }
 }
