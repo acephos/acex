@@ -51,10 +51,10 @@ Never treat a panic backtrace as success.
 ### Optional live E2E
 
 ```bash
-# Unix or Windows with herdr running
-set HERDR_E2E=1   # pwsh: $env:HERDR_E2E="1"
-cargo test -p herdr-client --test live_herdr -- --nocapture
-```
+# Unix / bash (live Herdr end-to-end test)
+HERDR_E2E=1 cargo test -p herdr-client --test live_herdr -- --nocapture
+# PowerShell
+$env:HERDR_E2E="1"; cargo test -p herdr-client --test live_herdr -- --nocapture
 
 ### Reconnect smoke (mutates local Herdr server)
 

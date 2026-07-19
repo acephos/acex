@@ -69,6 +69,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p acex -- --status           # Machine-readable conn/packages/skills
 cargo run -p acex -- --checkpoint-status # Pure JSON continuation oracle; no Herdr spawn
+cargo run -p acex -- --help             # Flag/usage list
 cargo run -p acex -- --smoke            # Live or actionable offline + discovery JSON
 cargo run -p acex -- --smoke-reconnect  # F04 reconnect path; may mutate local Herdr server
 cargo run -p acex                       # TUI (q quit)
