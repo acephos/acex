@@ -50,7 +50,7 @@ Keep the task order unchanged. Do not start task N+1 until task N is merged or e
 
 ## Task queue
 
-- [x] **IMP-01 — Add `--help` and unknown-flag rejection** — PR #21 — opened 2026-07-19
+- [x] **IMP-01 — Add `--help` and unknown-flag rejection** — PR #21 — merged 2026-07-19
 
   **Why this matters**
   
