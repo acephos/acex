@@ -80,7 +80,7 @@ Keep the task order unchanged. Do not start task N+1 until task N is merged or e
   - The help path and unknown-flag path behave as described.
   - The branch is pushed and the PR is merged, or the green PR URL plus blocker is reported.
 
-- [x] **IMP-02 — Sync operator docs with the CLI surface** — PR #23 — opened 2026-07-19
+- [x] **IMP-02 — Sync operator docs with the CLI surface** — PR #23 — merged 2026-07-19
 
   **Why this matters**
   
