@@ -17,6 +17,7 @@ Current workspace: 8 crates; `docs/tracker.html` is the sole planning truth.
 | Verify CI | [verify-ci.md](./verify-ci.md) |
 | PR verify helper | [verify-pr.md](./verify-pr.md) |
 | OMP PR loop | [omp-pr-loop.md](./omp-pr-loop.md) |
+| Improvement plan queue | [improvement-plan.md](./improvement-plan.md) |
 | CODEOWNERS | [codeowners.md](./codeowners.md) |
 | Repository protection | [repo-protection.md](./repo-protection.md) |
 | Checkpoint status schema | [checkpoint-status-schema.md](./checkpoint-status-schema.md) |
