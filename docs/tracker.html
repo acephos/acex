@@ -223,14 +223,14 @@
   "active_phase": "G2 polish",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-19-improvement-queue",
+  "latest_comment_id": "2026-07-19-imp-02-cli-docs",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
     "latest_hash": "00e5a7e391650b277024da63957fdcf7498961f8747eea56992676aacd6ca67f",
     "entry_count": 23
   },
-  "next_ready": [{"id":"IMP-01"}],
+  "next_ready": [{"id":"IMP-03"}],
   "blocked": []
 }
     </script>
@@ -598,6 +598,12 @@
 
 
 
+      <div class="comment" id="2026-07-19-imp-02-cli-docs">
+        <div class="meta"><span class="tag">2026-07-19</span> · IMP-02 CLI/docs sync · agent</div>
+        <p style="margin:0">
+          Synced the operator docs with the new CLI surface: README and <code>skills/acex-dev/SKILL.md</code> now teach <code>cargo run -p acex -- --help</code>, and <code>docs/VERIFY.md</code> uses a real bash <code>HERDR_E2E=1 cargo test ...</code> invocation with a separate explicit PowerShell note. Checkpoint capsule <code>next_ready</code> advanced to IMP-03.
+        </p>
+      </div>
       <div class="comment" id="2026-07-19-improvement-queue">
         <div class="meta"><span class="tag">2026-07-19</span> · Improvement plan queue · agent</div>
         <p style="margin:0">
