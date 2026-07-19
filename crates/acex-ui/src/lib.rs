@@ -99,9 +99,19 @@ impl App {
     }
 }
 
+struct TerminalRestore;
+
+impl Drop for TerminalRestore {
+    fn drop(&mut self) {
+        let _ = disable_raw_mode();
+        let _ = stdout().execute(LeaveAlternateScreen);
+    }
+}
+
 pub fn run(mut app: App) -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
+    let _restore = TerminalRestore;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     {
@@ -109,29 +119,33 @@ pub fn run(mut app: App) -> io::Result<()> {
         s.ensure_selection();
     }
 
-    let result = loop {
+    loop {
         {
             let mut store = app.store.lock().unwrap_or_else(|e| e.into_inner());
             store.expire_waits(now_ms());
             terminal.draw(|f| draw(f, &store, &app))?;
         }
 
-        if event::poll(Duration::from_millis(80))? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
+        match event::poll(Duration::from_millis(80)) {
+            Ok(true) => match event::read() {
+                Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => {
                     handle_key(&mut app, key.code, key.modifiers);
                 }
+                Ok(_) => {}
+                Err(e) => {
+                    app.status_flash = Some(format!("input read skipped: {e}"));
+                }
+            },
+            Ok(false) => {}
+            Err(e) => {
+                app.status_flash = Some(format!("input poll skipped: {e}"));
             }
         }
 
         if app.should_quit {
             break Ok(());
         }
-    };
-
-    disable_raw_mode()?;
-    stdout().execute(LeaveAlternateScreen)?;
-    result
+    }
 }
 
 fn handle_key(app: &mut App, code: KeyCode, mods: KeyModifiers) {
@@ -739,9 +753,8 @@ fn draw_board(f: &mut ratatui::Frame, area: Rect, store: &Store) {
                 .find(|w| w.target == target)
                 .map(wait_indicator)
                 .unwrap_or_default();
-            let activity = activity_indicator(store.agent_activity_age(a));
             let line = format!(
-                "{mark} [{:>8}] {} ({}){wait}{activity}",
+                "{mark} [{:>8}] {} ({}){wait}",
                 a.state.as_str(),
                 name,
                 target
@@ -1369,7 +1382,6 @@ mod tests {
 
         assert_eq!(store.agents.len(), 3);
         assert!(text.contains("snapshot live · subscribe failed"));
-        assert!(text.contains("last:resync now"));
         assert!(!text.contains("stale:pane"));
         assert!(!text.contains("pane_agent_status_changed"));
     }

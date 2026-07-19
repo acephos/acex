@@ -9,6 +9,7 @@ mod worker;
 use checkpoint_status::{build_checkpoint_status, collect_git_info};
 use sync_util::lock_store;
 
+use anyhow::Context;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -73,12 +74,14 @@ fn init_tracing(log_to_file: bool) -> anyhow::Result<()> {
     if log_to_file {
         let log_path = PathBuf::from("target").join("acex.log");
         if let Some(parent) = log_path.parent() {
-            std::fs::create_dir_all(parent)?;
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("create log directory {}", parent.display()))?;
         }
         let file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(&log_path)?;
+            .open(&log_path)
+            .with_context(|| format!("open log file {}", log_path.display()))?;
         tracing_subscriber::fmt()
             .with_env_filter(filter)
             .with_writer(SharedLogWriter::new(file))
