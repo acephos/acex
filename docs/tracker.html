@@ -218,19 +218,19 @@
     <script type="application/json" id="acex-checkpoint">
 {
   "schema_version": 1,
-  "last_updated": "2026-07-15",
+  "last_updated": "2026-07-19",
   "active_gate": "G2",
   "active_phase": "G2 polish",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-15-demo-board-repair",
+  "latest_comment_id": "2026-07-19-improvement-queue",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "acfd02cb575f7363b0b3a7ddc3cded0dd0aef381606a995b2fa874cf5b6d888f",
-    "entry_count": 22
+    "latest_hash": "00e5a7e391650b277024da63957fdcf7498961f8747eea56992676aacd6ca67f",
+    "entry_count": 23
   },
-  "next_ready": [],
+  "next_ready": [{"id":"IMP-01"}],
   "blocked": []
 }
     </script>
@@ -597,6 +597,13 @@
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
 
 
+
+      <div class="comment" id="2026-07-19-improvement-queue">
+        <div class="meta"><span class="tag">2026-07-19</span> · Improvement plan queue · agent</div>
+        <p style="margin:0">
+          Created a stateless improvement queue in <code>docs/IMPROVEMENT_PLAN.md</code> with eight sequential tasks: CLI help, docs sync, workspace lint policy, editor tests, pane-ID validation, malformed worker-shape warnings, discovery diagnostics, and <code>.omp/</code> ignore. The tracker capsule now points at <strong>IMP-01</strong> for the next session.
+        </p>
+      </div>
 
       <div class="comment" id="2026-07-15-demo-board-repair">
         <div class="meta"><span class="tag">2026-07-15</span> · Demo board repair · agent</div>
