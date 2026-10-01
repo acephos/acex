@@ -2,6 +2,8 @@
 name = "acex-discover"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
 license.workspace = true
 description = "Pure filesystem discovery of acex packages and skills (Pi-like progressive disclosure)"
 

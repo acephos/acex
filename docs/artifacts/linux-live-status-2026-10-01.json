@@ -1,0 +1,24 @@
+{
+  "acex_status": 1,
+  "agents": 1,
+  "config": {
+    "layout_presets": [],
+    "start_presets": []
+  },
+  "conn": "Live",
+  "diagnostics": [],
+  "error": null,
+  "events": 0,
+  "offline_flag": false,
+  "panes": 1,
+  "reconnects": 0,
+  "seams": [
+    "Intent",
+    "Transport",
+    "EditorBridge",
+    "acex-discover"
+  ],
+  "snapshot_gen": 1,
+  "subscribed": false,
+  "workspaces": 1
+}

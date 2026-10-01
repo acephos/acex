@@ -1,0 +1,70 @@
+{
+  "results": [
+    {
+      "agents": 16,
+      "frame": {
+        "p50": 292062,
+        "p95": 489115,
+        "p99": 530884,
+        "samples": 200,
+        "unit": "nanoseconds"
+      },
+      "reduce": {
+        "p50": 381,
+        "p95": 451,
+        "p99": 591,
+        "samples": 1800,
+        "unit": "nanoseconds"
+      }
+    },
+    {
+      "agents": 64,
+      "frame": {
+        "p50": 352216,
+        "p95": 635893,
+        "p99": 658886,
+        "samples": 200,
+        "unit": "nanoseconds"
+      },
+      "reduce": {
+        "p50": 732,
+        "p95": 1333,
+        "p99": 1553,
+        "samples": 1800,
+        "unit": "nanoseconds"
+      }
+    },
+    {
+      "agents": 256,
+      "frame": {
+        "p50": 432878,
+        "p95": 689163,
+        "p99": 789312,
+        "samples": 200,
+        "unit": "nanoseconds"
+      },
+      "reduce": {
+        "p50": 1402,
+        "p95": 2976,
+        "p99": 3567,
+        "samples": 1800,
+        "unit": "nanoseconds"
+      }
+    }
+  ],
+  "scope": "offline synthetic fixture; no network, PTYs or live agents",
+  "terminal": [
+    156,
+    48
+  ],
+  "date": "2026-10-01",
+  "environment": {
+    "platform": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+    "machine": "x86_64",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cpu": "AMD Ryzen 5 5600H with Radeon Graphics",
+    "build": "release, --locked",
+    "base_commit": "2142aa3ff99a552c9c476d3d0dfc9e564e70328a"
+  },
+  "command": "cargo run --locked --release -p acex-ui --example measure -- docs/artifacts/offline-board.txt"
+}

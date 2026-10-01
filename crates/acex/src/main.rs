@@ -215,6 +215,11 @@ async fn main() -> anyhow::Result<()> {
             "{}",
             serde_json::to_string_pretty(&body).unwrap_or_else(|_| "{}".into())
         );
+        if body["tracker"]["valid"] != true || body["ledger"]["valid"] != true {
+            anyhow::bail!(
+                "invalid continuation checkpoint; repair tracker/ledger before continuing"
+            );
+        }
         return Ok(());
     }
 
