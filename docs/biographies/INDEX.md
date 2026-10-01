@@ -7,6 +7,7 @@ Current workspace: 8 crates; `docs/tracker.html` is the sole planning truth.
 
 | Artifact | Biography |
 |----------|-----------|
+| Profile verification / benchmark / recording | [profile-verification.md](./profile-verification.md) |
 | Project soul | [SOUL.md](./SOUL.md) |
 | Project goals | [GOAL.md](./GOAL.md) |
 | Agent ops manual | [AGENTS.md](./AGENTS.md) |

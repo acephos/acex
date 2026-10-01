@@ -46,6 +46,13 @@ struct CheckpointCapsule {
     active_phase: String,
     latest_comment_id: String,
     next_ready: Vec<NextReadyItem>,
+    ledger: CapsuleLedger,
+}
+
+#[derive(Debug, Deserialize)]
+struct CapsuleLedger {
+    entry_count: usize,
+    latest_hash: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,8 +94,8 @@ pub fn build_checkpoint_status(
     git: GitInfo,
     config: &Config,
 ) -> Value {
-    let tracker = read_tracker(root);
     let ledger = read_ledger(root);
+    let tracker = read_tracker(root, &ledger);
     let socket_target = target
         .path_hint()
         .map(|p| p.to_string_lossy().to_string())
@@ -138,13 +145,26 @@ pub fn build_checkpoint_status(
     })
 }
 
-fn read_tracker(root: &Path) -> TrackerProbe {
+fn read_tracker(root: &Path, ledger: &LedgerProbe) -> TrackerProbe {
     let path = root.join("docs").join("tracker.html");
     let html = match fs::read_to_string(&path) {
         Ok(html) => html,
         Err(err) => return tracker_error(format!("read {}: {err}", path.display())),
     };
     match parse_checkpoint_capsule(&html) {
+        Ok(capsule) if capsule.schema_version != CHECKPOINT_STATUS_SCHEMA_VERSION => {
+            tracker_error("unsupported checkpoint capsule schema_version".to_string())
+        }
+        Ok(capsule)
+            if !ledger.valid
+                || capsule.ledger.entry_count != ledger.entries
+                || ledger.latest_hash.as_deref() != Some(capsule.ledger.latest_hash.as_str()) =>
+        {
+            tracker_error(
+                "checkpoint capsule ledger count/hash differs from validated ledger tail"
+                    .to_string(),
+            )
+        }
         Ok(capsule) => TrackerProbe {
             valid: true,
             error: None,
@@ -298,7 +318,7 @@ mod tests {
     #[test]
     fn parses_checkpoint_capsule() {
         let html = r#"<html><body><script type="application/json" id="acex-checkpoint">
-        {"schema_version":1,"last_updated":"2026-07-14","active_phase":"G1 polish","latest_comment_id":"2026-07-14-x","next_ready":[{"id":"F31"},{"id":"F32"}]}
+        {"schema_version":1,"last_updated":"2026-07-14","active_phase":"G1 polish","latest_comment_id":"2026-07-14-x","next_ready":[{"id":"F31"},{"id":"F32"}],"ledger":{"entry_count":1,"latest_hash":"fixture"}}
         </script></body></html>"#;
         let capsule = parse_checkpoint_capsule(html).unwrap();
         assert_eq!(capsule.schema_version, 1);
@@ -328,7 +348,18 @@ mod tests {
             "next": "test next",
             "prev_hash": "GENESIS"
         }));
+        let entry: Value = serde_json::from_str(first.trim()).unwrap();
         fs::write(root.join("docs").join("checkpoint-ledger.jsonl"), first).unwrap();
+        let tracker_path = root.join("docs").join("tracker.html");
+        let tracker = fs::read_to_string(&tracker_path).unwrap();
+        let mut capsule: Value =
+            serde_json::from_str(extract_checkpoint_script(&tracker).unwrap()).unwrap();
+        capsule["ledger"] = json!({"entry_count": 1, "latest_hash": entry["hash"]});
+        fs::write(
+            &tracker_path,
+            format!("<script id=\"acex-checkpoint\">{capsule}</script>"),
+        )
+        .unwrap();
 
         let mut config = Config::default();
         config.start_presets.push(acex_model::StartPreset {
@@ -367,6 +398,23 @@ mod tests {
         assert_eq!(status["config"]["layout_presets"], json!([]));
 
         assert_eq!(status["discovery"]["diagnostics"], json!([]));
+        for (count, hash) in [(2, entry["hash"].clone()), (1, json!("wrong"))] {
+            capsule["ledger"] = json!({"entry_count": count, "latest_hash": hash});
+            fs::write(
+                &tracker_path,
+                format!("<script id=\"acex-checkpoint\">{capsule}</script>"),
+            )
+            .unwrap();
+            let status = build_checkpoint_status(
+                root,
+                &SocketTarget::Default,
+                &DiscoveryReport::default(),
+                collect_git_info(root),
+                &config,
+            );
+            assert_eq!(status["tracker"]["valid"], json!(false));
+            assert_eq!(status["herdr"]["side_effects"], json!("none"));
+        }
     }
 
     fn ledger_line(mut entry: Value) -> String {

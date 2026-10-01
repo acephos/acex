@@ -123,7 +123,7 @@ pub fn run(mut app: App) -> io::Result<()> {
         {
             let mut store = app.store.lock().unwrap_or_else(|e| e.into_inner());
             store.expire_waits(now_ms());
-            terminal.draw(|f| draw(f, &store, &app))?;
+            terminal.draw(|f| render(f, &store, &app))?;
         }
 
         match event::poll(Duration::from_millis(80)) {
@@ -675,7 +675,8 @@ fn apply_palette_action(app: &mut App, action: PaletteAction) {
     }
 }
 
-fn draw(f: &mut ratatui::Frame, store: &Store, app: &App) {
+/// Render one frame using the shipped UI; also usable by offline fixtures.
+pub fn render(f: &mut ratatui::Frame, store: &Store, app: &App) {
     let area = f.area();
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -1376,7 +1377,7 @@ mod tests {
         let backend = ratatui::backend::TestBackend::new(156, 48);
         let mut terminal = Terminal::new(backend).expect("test terminal");
         terminal
-            .draw(|frame| draw(frame, &store, &app))
+            .draw(|frame| render(frame, &store, &app))
             .expect("draw frame");
         let text = terminal_buffer_text(terminal.backend().buffer());
 

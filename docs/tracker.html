@@ -196,7 +196,7 @@
         <span class="chip mute">G1 = MVP ship</span>
         <span class="chip mute">No calendar estimates</span>
       </div>
-      <p class="updated">Last updated · 2026-07-15 · append-only checkpoint ledger</p>
+      <p class="updated">Last updated · 2026-10-01 · append-only checkpoint ledger</p>
     </header>
 
     <nav class="menu" aria-label="Sections">
@@ -218,19 +218,23 @@
     <script type="application/json" id="acex-checkpoint">
 {
   "schema_version": 1,
-  "last_updated": "2026-07-19",
+  "last_updated": "2026-10-01",
   "active_gate": "G2",
   "active_phase": "G2 polish",
   "tracker_live_state_wins": true,
   "conflict_rule": "For current planning, this checkpoint capsule wins over prose in README, GOAL, ledger history, and older tracker comments. Ledger is historical evidence, not live planning authority.",
-  "latest_comment_id": "2026-07-19-imp-02-cli-docs",
+  "latest_comment_id": "2026-10-01-profile-verification",
   "ledger": {
     "path": "docs/checkpoint-ledger.jsonl",
     "tail_entries": 3,
-    "latest_hash": "00e5a7e391650b277024da63957fdcf7498961f8747eea56992676aacd6ca67f",
-    "entry_count": 23
+    "latest_hash": "75389d0010d62b0efde84e78b8f0f6ad01bf3a76f75c9481b7733b82f8cf8047",
+    "entry_count": 25
   },
-  "next_ready": [{"id":"IMP-03"}],
+  "next_ready": [
+    {
+      "id": "IMP-03"
+    }
+  ],
   "blocked": []
 }
     </script>
@@ -241,10 +245,10 @@
       <div class="kpi">
         <div class="cell"><div class="n">G2</div><div class="l">Phase</div></div>
         <div class="cell"><div class="n">polish</div><div class="l">Track</div></div>
-        <div class="cell"><div class="n">86</div><div class="l">Tests pass</div></div>
+        <div class="cell"><div class="n">93+2</div><div class="l">Unit / Linux live</div></div>
         <div class="cell"><div class="n">16</div><div class="l">Herdr protocol</div></div>
         <div class="cell"><div class="n">8</div><div class="l">Crates</div></div>
-        <div class="cell"><div class="n">Win✓</div><div class="l">Pipe live</div></div>
+        <div class="cell"><div class="n">Win</div><div class="l">Historical proof</div></div>
       </div>
       <div class="say" style="margin-top:16px">
         <span class="soul">♥</span>
@@ -595,6 +599,10 @@
     <!-- COMMENTS -->
     <section id="comments" class="box">
       <div class="box-title"><span class="dot live"></span> Comments · agent notes</div>
+      <div class="comment" id="2026-10-01-profile-verification">
+        <div class="meta"><span class="tag">2026-10-01</span> · PROFILE-01 onboarding and evidence · agent</div>
+        <p>User-requested profile improvements verified: minimal source quickstart, matching dual licenses/repository metadata, Rust 1.88 locked MSRV, Linux live ping/snapshot/subscription and TUI quit proof, and offline 16/64/256-row reducer/render measurements. Repaired the stale capsule tail and added count/hash/version validation with nonzero CLI exit on invalid checkpoints. Windows/macOS CI covers offline contracts; no new live Windows proof or live multi-agent load claim. See <a href="artifacts/profile-verification-2026-10-01.md">dated evidence</a>. Existing IMP-03 remains next-ready.</p>
+      </div>
 
 
 
@@ -1109,6 +1117,7 @@
     <section id="changelog" class="box">
       <div class="box-title"><span class="dot"></span> Changelog · tracker</div>
       <ul>
+        <li><strong>2026-10-01</strong> — PROFILE-01 implemented onboarding/license/metadata fixes, bounded Linux live and offline performance evidence, platform/MSRV CI, and fail-closed capsule/ledger validation. Historical Windows claims remain dated evidence; IMP-03 queue unchanged.</li>
         <li><strong>2026-07-15</strong> — Repaired demo board blockers: logs route to <code>target/acex.log</code> during the TUI, resnapshot drops ghost rows, subscribe-start pipe-close retries stop resnapshot storms, and headless render coverage guards the 3-pane board.</li>
         <li><strong>2026-07-15</strong> — F36 shipped board activity age polish: per-agent last-signal tracking from existing store inputs plus bounded board/detail stale cues, with no polling, live frame streaming, terminal emulation, or peek-as-truth.</li>
         <li><strong>2026-07-15</strong> — F35 shipped cached ANSI peek polish: read RPCs request ANSI payloads, the model preserves raw cached text, and the UI renders bounded SGR styles with plain/control-safe fallback.</li>

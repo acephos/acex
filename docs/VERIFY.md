@@ -53,8 +53,12 @@ Never treat a panic backtrace as success.
 ```bash
 # Unix / bash (live Herdr end-to-end test)
 HERDR_E2E=1 cargo test -p herdr-client --test live_herdr -- --nocapture
+```
+
+```powershell
 # PowerShell
 $env:HERDR_E2E="1"; cargo test -p herdr-client --test live_herdr -- --nocapture
+```
 
 ### Reconnect smoke (mutates local Herdr server)
 

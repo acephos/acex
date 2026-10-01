@@ -2,6 +2,8 @@
 name = "acex-model"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
 license.workspace = true
 description = "acex session store, reducers, filters, waiters"
 

@@ -22,3 +22,22 @@ jobs:
         shell: bash
         run: |
           scripts/verify-pr.sh --offline-smoke
+
+  portability:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --workspace --locked
+      - run: cargo run -p acex -- --offline --status
+      - run: cargo run -p acex -- --checkpoint-status
+      - run: cargo run -p acex -- --offline --smoke
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - run: cargo check --workspace --locked

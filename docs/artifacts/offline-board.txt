@@ -1,0 +1,49 @@
+OFFLINE SYNTHETIC FIXTURE — no live agent activity
+┌acex──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ACEX · live · ev 2000 · gen 1 · re 0                                                                                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌agents · j/k · 1-5 filter · Ctrl+W workspace · / search──────────────────┐┌detail · peek──────────────────────────────────────────────────────────────────┐
+│filter:all workspace:all q=""  [i0 w16 b0 d0 u0]                         ││selected · fixture:0 · working                                                 │
+│▶ [ working] synthetic agent 0 (fixture:0)                               ││activity · stale:status +15ev                                                  │
+│  [ working] synthetic agent 1 (fixture:1)                               ││live · events=2000 · last=pane_agent_status_changed                            │
+│  [ working] synthetic agent 2 (fixture:2)                               ││                                                                               │
+│  [ working] synthetic agent 3 (fixture:3)                               ││peek - · ready                                                                 │
+│  [ working] synthetic agent 4 (fixture:4)                               ││  (r refresh peek)                                                             │
+│  [ working] synthetic agent 5 (fixture:5)                               ││                                                                               │
+│  [ working] synthetic agent 6 (fixture:6)                               ││events:                                                                        │
+│  [ working] synthetic agent 7 (fixture:7)                               ││  · pane_agent_status_changed                                                  │
+│  [ working] synthetic agent 8 (fixture:8)                               ││  · pane_agent_status_changed                                                  │
+│  [ working] synthetic agent 9 (fixture:9)                               ││  · pane_agent_status_changed                                                  │
+│  [ working] synthetic agent 10 (fixture:10)                             ││  · pane_agent_status_changed                                                  │
+│  [ working] synthetic agent 11 (fixture:11)                             ││  · pane_agent_status_changed                                                  │
+│  [ working] synthetic agent 12 (fixture:12)                             ││                                                                               │
+│  [ working] synthetic agent 13 (fixture:13)                             ││                                                                               │
+│  [ working] synthetic agent 14 (fixture:14)                             ││                                                                               │
+│  [ working] synthetic agent 15 (fixture:15)                             ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+│                                                                         ││                                                                               │
+└─────────────────────────────────────────────────────────────────────────┘└───────────────────────────────────────────────────────────────────────────────┘
+┌keys──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Ctrl+K palette · Ctrl+W workspace · f focus · r peek · s send · w/b wait · a attach · z zed · t worktrees · q quit                                       │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘

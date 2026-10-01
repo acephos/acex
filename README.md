@@ -13,6 +13,26 @@ acex  ──socket──▶  Herdr   ──PTY──▶  agents
   └── spawn ──▶  Zed
 ```
 
+## Try the control plane
+
+Use acex to inspect parallel Herdr agents, filter the board, read cached output, and hand workspaces to Zed. Herdr owns the terminal processes; exiting acex leaves them running.
+
+Prerequisites: Rust **1.88 or newer** with Cargo, Git, and a terminal. The locked dependency graph requires 1.88; the former 1.75 declaration was inaccurate. Live operation additionally requires a compatible Herdr executable on `PATH`; Zed is optional for editor actions. The schema currently targets **Herdr protocol 16**, observed with `0.7.2-preview.2026-07-07-f5354780e4ef`; newer releases require compatibility verification.
+
+```bash
+git clone https://github.com/acephos/acex.git
+cd acex
+cargo build --locked --release -p acex
+./target/release/acex --help
+./target/release/acex --offline --status   # no daemon needed
+./target/release/acex --checkpoint-status # no daemon is spawned
+./target/release/acex --offline           # explore the empty offline TUI
+```
+
+For live operation, start `herdr server` in another terminal, then run `./target/release/acex`. Set `HERDR_SOCKET_PATH` for an isolated server/socket. In the TUI, use `Ctrl+K` for the command palette and `q` to quit. Follow [verification](docs/VERIFY.md) for the live integration checks and [configuration](docs/EXTENDING.md) for extension points.
+
+Source builds are the supported installation path; this revision does not claim a packaged release or broad cross-platform certification. [Dated evidence](docs/artifacts/profile-verification-2026-10-01.md) separates Linux live checks, offline fixture benchmarks, and Windows coverage. Dual licensing follows the existing Cargo declaration: [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE).
+
 ## Start here (humans & agents)
 
 | Doc | Purpose |
@@ -61,7 +81,7 @@ acex/
 
 ## Build & verify
 
-Requires Rust (edition 2021+). Herdr is optional for offline-honest `--status`; live `--smoke` exercises the connect path.
+Requires Rust 1.88+ (edition 2021). Herdr is optional for offline-honest `--status`; live `--smoke` exercises the connect path.
 
 ```bash
 cargo fmt --all -- --check
